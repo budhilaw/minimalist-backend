@@ -5,9 +5,9 @@ use axum::{
 };
 use serde_json::{json, Value};
 use std::sync::Arc;
+use tracing::{error, info};
 use uuid::Uuid;
 use validator::Validate;
-use tracing::{info, error};
 
 use crate::{
     models::post::{CreatePostRequest, PostQuery, UpdatePostRequest},
@@ -120,21 +120,27 @@ pub async fn get_published_posts(
     State(state): State<PostState>,
     Query(query): Query<serde_json::Value>,
 ) -> Result<Json<Value>, AppError> {
-    info!("get_published_posts: Starting request with query: {:?}", query);
-    
+    info!(
+        "get_published_posts: Starting request with query: {:?}",
+        query
+    );
+
     let limit = query
         .get("limit")
         .and_then(|v| v.as_u64())
         .map(|v| v as u32);
-    
+
     info!("get_published_posts: Parsed limit: {:?}", limit);
 
     info!("get_published_posts: Calling blog_service.get_published_posts");
     let posts = match state.blog_service.get_published_posts(limit).await {
         Ok(posts) => {
-            info!("get_published_posts: Successfully fetched {} posts", posts.len());
+            info!(
+                "get_published_posts: Successfully fetched {} posts",
+                posts.len()
+            );
             posts
-        },
+        }
         Err(e) => {
             error!("get_published_posts: Error fetching posts: {:?}", e);
             return Err(e);
@@ -145,8 +151,11 @@ pub async fn get_published_posts(
         "posts": posts,
         "total": posts.len()
     });
-    
-    info!("get_published_posts: Returning response with {} posts", posts.len());
+
+    info!(
+        "get_published_posts: Returning response with {} posts",
+        posts.len()
+    );
     Ok(Json(response))
 }
 

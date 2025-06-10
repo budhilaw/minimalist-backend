@@ -1,11 +1,11 @@
+use anyhow::Result;
 use async_trait::async_trait;
+use serde_json::json;
 use std::sync::Arc;
 use uuid::Uuid;
-use anyhow::Result;
-use serde_json::json;
 
 use crate::{
-    models::audit_log::{AuditLog, CreateAuditLogRequest, AuditLogFilters, AuditLogResponse},
+    models::audit_log::{AuditLog, AuditLogFilters, AuditLogResponse, CreateAuditLogRequest},
     repositories::AuditLogRepository,
 };
 
@@ -15,13 +15,18 @@ pub trait AuditLogServiceTrait: Send + Sync {
     async fn get_by_id(&self, id: Uuid) -> Result<Option<AuditLog>>;
     async fn get_all_with_filters(&self, filters: AuditLogFilters) -> Result<AuditLogResponse>;
     async fn get_by_user_id(&self, user_id: Uuid, limit: Option<i64>) -> Result<Vec<AuditLog>>;
-    async fn get_by_resource(&self, resource_type: String, resource_id: Uuid) -> Result<Vec<AuditLog>>;
+    async fn get_by_resource(
+        &self,
+        resource_type: String,
+        resource_id: Uuid,
+    ) -> Result<Vec<AuditLog>>;
     async fn get_recent_logs(&self, limit: Option<i64>) -> Result<Vec<AuditLog>>;
     async fn get_failed_actions(&self, limit: Option<i64>) -> Result<Vec<AuditLog>>;
     async fn delete_old_logs(&self, days: i32) -> Result<u64>;
     async fn get_stats(&self) -> Result<serde_json::Value>;
-    
+
     // Helper methods
+    #[allow(clippy::too_many_arguments)]
     async fn log_admin_action(
         &self,
         user_id: Option<Uuid>,
@@ -36,7 +41,8 @@ pub trait AuditLogServiceTrait: Send + Sync {
         success: bool,
         error_message: Option<String>,
     ) -> Result<AuditLog>;
-    
+
+    #[allow(clippy::too_many_arguments)]
     async fn log_auth_event(
         &self,
         user_id: Option<Uuid>,
@@ -60,6 +66,7 @@ impl AuditLogService {
     }
 
     // Helper method to create audit log for admin actions
+    #[allow(clippy::too_many_arguments)]
     pub async fn log_admin_action(
         &self,
         user_id: Option<Uuid>,
@@ -94,6 +101,7 @@ impl AuditLogService {
     }
 
     // Helper method to log authentication events
+    #[allow(clippy::too_many_arguments)]
     pub async fn log_auth_event(
         &self,
         user_id: Option<Uuid>,
@@ -125,6 +133,7 @@ impl AuditLogService {
     }
 
     // Helper method to log CRUD operations
+    #[allow(clippy::too_many_arguments)]
     pub async fn log_crud_operation(
         &self,
         user_id: Option<Uuid>,
@@ -148,7 +157,8 @@ impl AuditLogService {
             new_values,
             true,
             None,
-        ).await
+        )
+        .await
     }
 }
 
@@ -170,8 +180,14 @@ impl AuditLogServiceTrait for AuditLogService {
         self.repository.get_by_user_id(user_id, limit).await
     }
 
-    async fn get_by_resource(&self, resource_type: String, resource_id: Uuid) -> Result<Vec<AuditLog>> {
-        self.repository.get_by_resource(resource_type, resource_id).await
+    async fn get_by_resource(
+        &self,
+        resource_type: String,
+        resource_id: Uuid,
+    ) -> Result<Vec<AuditLog>> {
+        self.repository
+            .get_by_resource(resource_type, resource_id)
+            .await
     }
 
     async fn get_recent_logs(&self, limit: Option<i64>) -> Result<Vec<AuditLog>> {
@@ -193,7 +209,7 @@ impl AuditLogServiceTrait for AuditLogService {
         // Get various statistics about audit logs
         let recent_logs = self.repository.get_recent_logs(Some(100)).await?;
         let failed_logs = self.repository.get_failed_actions(Some(50)).await?;
-        
+
         // Calculate statistics
         let total_recent = recent_logs.len();
         let total_failed = failed_logs.len();
@@ -210,7 +226,9 @@ impl AuditLogServiceTrait for AuditLogService {
 
         for log in &recent_logs {
             *action_counts.entry(log.action.clone()).or_insert(0) += 1;
-            *resource_counts.entry(log.resource_type.clone()).or_insert(0) += 1;
+            *resource_counts
+                .entry(log.resource_type.clone())
+                .or_insert(0) += 1;
             if let Some(user_name) = &log.user_name {
                 *user_counts.entry(user_name.clone()).or_insert(0) += 1;
             }
@@ -258,6 +276,7 @@ impl AuditLogServiceTrait for AuditLogService {
         }))
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn log_admin_action(
         &self,
         user_id: Option<Uuid>,
@@ -291,6 +310,7 @@ impl AuditLogServiceTrait for AuditLogService {
         self.create(request).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn log_auth_event(
         &self,
         user_id: Option<Uuid>,
@@ -320,4 +340,4 @@ impl AuditLogServiceTrait for AuditLogService {
 
         self.create(request).await
     }
-} 
+}

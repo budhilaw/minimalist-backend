@@ -1,11 +1,11 @@
 use crate::models::admin_settings::{
-    AdminSettingsRecord, AdminSettings, GeneralSettings, FeatureSettings, 
-    NotificationSettings, SecuritySettings
+    AdminSettings, AdminSettingsRecord, FeatureSettings, GeneralSettings, NotificationSettings,
+    SecuritySettings,
 };
+use anyhow::{anyhow, Result};
+use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
-use anyhow::{Result, anyhow};
-use chrono::Utc;
 
 pub struct AdminSettingsRepository {
     pool: PgPool,
@@ -47,7 +47,12 @@ impl AdminSettingsRepository {
         Ok(record)
     }
 
-    pub async fn update_setting(&self, key: &str, value: serde_json::Value, updated_by: Option<Uuid>) -> Result<AdminSettingsRecord> {
+    pub async fn update_setting(
+        &self,
+        key: &str,
+        value: serde_json::Value,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettingsRecord> {
         let record = sqlx::query_as!(
             AdminSettingsRecord,
             r#"
@@ -66,25 +71,42 @@ impl AdminSettingsRepository {
         Ok(record)
     }
 
-    pub async fn update_general_settings(&self, settings: GeneralSettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    pub async fn update_general_settings(
+        &self,
+        settings: GeneralSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         let value = serde_json::to_value(settings)?;
         self.update_setting("general", value, updated_by).await?;
         self.get_all_settings().await
     }
 
-    pub async fn update_feature_settings(&self, settings: FeatureSettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    pub async fn update_feature_settings(
+        &self,
+        settings: FeatureSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         let value = serde_json::to_value(settings)?;
         self.update_setting("features", value, updated_by).await?;
         self.get_all_settings().await
     }
 
-    pub async fn update_notification_settings(&self, settings: NotificationSettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    pub async fn update_notification_settings(
+        &self,
+        settings: NotificationSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         let value = serde_json::to_value(settings)?;
-        self.update_setting("notifications", value, updated_by).await?;
+        self.update_setting("notifications", value, updated_by)
+            .await?;
         self.get_all_settings().await
     }
 
-    pub async fn update_security_settings(&self, settings: SecuritySettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    pub async fn update_security_settings(
+        &self,
+        settings: SecuritySettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         let value = serde_json::to_value(settings)?;
         self.update_setting("security", value, updated_by).await?;
         self.get_all_settings().await
@@ -92,7 +114,7 @@ impl AdminSettingsRepository {
 
     pub async fn reset_to_defaults(&self, updated_by: Option<Uuid>) -> Result<AdminSettings> {
         let default_settings = AdminSettings::default();
-        
+
         // Update each setting with default values
         let general_value = serde_json::to_value(default_settings.general)?;
         let features_value = serde_json::to_value(default_settings.features)?;
@@ -141,7 +163,7 @@ impl AdminSettingsRepository {
 
     pub async fn is_feature_enabled(&self, feature: &str) -> Result<bool> {
         let record = self.get_setting("features").await?;
-        
+
         if let Some(record) = record {
             let features: FeatureSettings = serde_json::from_value(record.setting_value)?;
             match feature {
@@ -151,7 +173,7 @@ impl AdminSettingsRepository {
                 "blog" => Ok(features.blog_enabled),
                 "contactForm" => Ok(features.contact_form_enabled),
                 "search" => Ok(features.search_enabled),
-                _ => Err(anyhow!("Unknown feature: {}", feature))
+                _ => Err(anyhow!("Unknown feature: {}", feature)),
             }
         } else {
             // Default to true if setting doesn't exist
@@ -161,7 +183,7 @@ impl AdminSettingsRepository {
 
     pub async fn is_maintenance_mode(&self) -> Result<bool> {
         let record = self.get_setting("general").await?;
-        
+
         if let Some(record) = record {
             let general: GeneralSettings = serde_json::from_value(record.setting_value)?;
             Ok(general.maintenance_mode)
@@ -172,7 +194,7 @@ impl AdminSettingsRepository {
 
     pub async fn get_maintenance_message(&self) -> Result<String> {
         let record = self.get_setting("general").await?;
-        
+
         if let Some(record) = record {
             let general: GeneralSettings = serde_json::from_value(record.setting_value)?;
             Ok(general.maintenance_message)
@@ -181,7 +203,10 @@ impl AdminSettingsRepository {
         }
     }
 
-    async fn build_admin_settings(&self, records: Vec<AdminSettingsRecord>) -> Result<AdminSettings> {
+    async fn build_admin_settings(
+        &self,
+        records: Vec<AdminSettingsRecord>,
+    ) -> Result<AdminSettings> {
         let mut general = GeneralSettings::default();
         let mut features = FeatureSettings::default();
         let mut notifications = NotificationSettings::default();
@@ -214,13 +239,10 @@ impl AdminSettingsRepository {
 
         // Get user name if updated_by is set
         let updated_by_name = if let Some(user_id) = updated_by {
-            let user = sqlx::query!(
-                "SELECT username FROM users WHERE id = $1",
-                user_id
-            )
-            .fetch_optional(&self.pool)
-            .await?;
-            
+            let user = sqlx::query!("SELECT username FROM users WHERE id = $1", user_id)
+                .fetch_optional(&self.pool)
+                .await?;
+
             user.map(|u| u.username)
         } else {
             None
@@ -236,4 +258,4 @@ impl AdminSettingsRepository {
             updated_by: updated_by_name,
         })
     }
-} 
+}

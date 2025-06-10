@@ -1,12 +1,18 @@
-use axum::{extract::{ConnectInfo, State}, response::Json, http::HeaderMap};
+use axum::{
+    extract::{ConnectInfo, State},
+    http::HeaderMap,
+    response::Json,
+};
 use serde_json::json;
+use std::{net::SocketAddr, sync::Arc};
 use uuid::Uuid;
-use std::{sync::Arc, net::SocketAddr};
 
+use crate::middleware::rate_limiter::{
+    check_and_auto_block_ip, clear_auth_rate_limit, record_auth_failure, RedisRateLimiter,
+};
 use crate::models::user::{ChangePasswordRequest, LoginRequest, UpdateProfileRequest};
-use crate::services::auth_service::{AuthService, Claims};
 use crate::services::audit_log_service::AuditLogServiceTrait;
-use crate::middleware::rate_limiter::{clear_auth_rate_limit, record_auth_failure, RedisRateLimiter, check_and_auto_block_ip};
+use crate::services::auth_service::{AuthService, Claims};
 use crate::utils::errors::AppError;
 
 // State struct to hold auth service, audit log service, and rate limiter
@@ -26,7 +32,7 @@ pub async fn login(
     let username = request.username.clone();
     let client_ip = get_client_ip(&headers, Some(&addr));
     let user_agent = get_user_agent(&headers);
-    
+
     // Check if IP is manually blocked (simple Redis check)
     if let Some(ref limiter) = state.rate_limiter {
         let blocked_key = format!("blocked_ip:{}", client_ip);
@@ -36,7 +42,7 @@ pub async fn login(
                 .query_async(&mut conn)
                 .await
                 .unwrap_or(None);
-            
+
             if is_blocked.is_some() {
                 return Err(AppError::TooManyRequests {
                     message: "Your IP address has been blocked due to suspicious activity. Please contact support if you believe this is an error.".to_string(),
@@ -45,14 +51,19 @@ pub async fn login(
             }
         }
     }
-    
+
     // Check rate limiting before authentication
     if let Some(ref limiter) = state.rate_limiter {
-        match limiter.check_auth_rate_limit(&client_ip, Some(&username)).await {
+        match limiter
+            .check_auth_rate_limit(&client_ip, Some(&username))
+            .await
+        {
             Ok((allowed, info)) => {
                 if !allowed {
                     return Err(AppError::TooManyRequests {
-                        message: info.reason.unwrap_or_else(|| "Too many authentication attempts".to_string()),
+                        message: info
+                            .reason
+                            .unwrap_or_else(|| "Too many authentication attempts".to_string()),
                         retry_after: info.lockout_seconds,
                     });
                 }
@@ -63,7 +74,7 @@ pub async fn login(
             }
         }
     }
-    
+
     match state.auth_service.authenticate_user(request).await {
         Ok(response) => {
             // Clear rate limiting on successful authentication
@@ -74,16 +85,23 @@ pub async fn login(
             }
 
             // Log successful login
-            if let Err(e) = state.audit_log_service.log_auth_event(
-                Some(response.user.id),
-                Some(response.user.username.clone()),
-                "login",
-                true,
-                Some(format!("Successful login for user: {}", response.user.username)),
-                None,
-                Some(client_ip.clone()),
-                user_agent.clone(),
-            ).await {
+            if let Err(e) = state
+                .audit_log_service
+                .log_auth_event(
+                    Some(response.user.id),
+                    Some(response.user.username.clone()),
+                    "login",
+                    true,
+                    Some(format!(
+                        "Successful login for user: {}",
+                        response.user.username
+                    )),
+                    None,
+                    Some(client_ip.clone()),
+                    user_agent.clone(),
+                )
+                .await
+            {
                 eprintln!("Failed to log successful login: {}", e);
             }
 
@@ -106,16 +124,20 @@ pub async fn login(
             }
 
             // Log failed login attempt
-            if let Err(log_err) = state.audit_log_service.log_auth_event(
-                None,
-                Some(username.clone()),
-                "login_failed",
-                false,
-                Some(format!("Failed login attempt for username: {}", username)),
-                Some(e.to_string()),
-                Some(client_ip.clone()),
-                user_agent.clone(),
-            ).await {
+            if let Err(log_err) = state
+                .audit_log_service
+                .log_auth_event(
+                    None,
+                    Some(username.clone()),
+                    "login_failed",
+                    false,
+                    Some(format!("Failed login attempt for username: {}", username)),
+                    Some(e.to_string()),
+                    Some(client_ip.clone()),
+                    user_agent.clone(),
+                )
+                .await
+            {
                 eprintln!("Failed to log failed login: {}", log_err);
             }
 
@@ -129,16 +151,20 @@ pub async fn logout(
     claims: Claims,
 ) -> Result<Json<serde_json::Value>, AppError> {
     // Log logout
-    if let Err(e) = state.audit_log_service.log_auth_event(
-        Some(Uuid::parse_str(&claims.sub).unwrap_or_default()),
-        Some(claims.username.clone()),
-        "logout",
-        true,
-        Some(format!("User {} logged out", claims.username)),
-        None,
-        None, // IP not available for logout endpoint
-        None, // User agent not available for logout endpoint
-    ).await {
+    if let Err(e) = state
+        .audit_log_service
+        .log_auth_event(
+            Some(Uuid::parse_str(&claims.sub).unwrap_or_default()),
+            Some(claims.username.clone()),
+            "logout",
+            true,
+            Some(format!("User {} logged out", claims.username)),
+            None,
+            None, // IP not available for logout endpoint
+            None, // User agent not available for logout endpoint
+        )
+        .await
+    {
         eprintln!("Failed to log logout: {}", e);
     }
 
@@ -175,7 +201,8 @@ fn get_client_ip(headers: &HeaderMap, addr: Option<&SocketAddr>) -> String {
 
 // Helper function to extract user agent
 fn get_user_agent(headers: &HeaderMap) -> Option<String> {
-    headers.get("user-agent")
+    headers
+        .get("user-agent")
         .and_then(|h| h.to_str().ok())
         .map(|s| s.to_string())
 }
@@ -228,19 +255,23 @@ pub async fn update_profile(
     let updated_user = state.auth_service.update_profile(user_id, request).await?;
 
     // Log profile update
-    if let Err(e) = state.audit_log_service.log_admin_action(
-        Some(user_id),
-        Some(claims.username.clone()),
-        "profile_updated",
-        "profile",
-        Some(user_id),
-        Some(format!("Profile for {}", claims.username)),
-        Some("User profile updated".to_string()),
-        None,
-        None,
-        true,
-        None,
-    ).await {
+    if let Err(e) = state
+        .audit_log_service
+        .log_admin_action(
+            Some(user_id),
+            Some(claims.username.clone()),
+            "profile_updated",
+            "profile",
+            Some(user_id),
+            Some(format!("Profile for {}", claims.username)),
+            Some("User profile updated".to_string()),
+            None,
+            None,
+            true,
+            None,
+        )
+        .await
+    {
         eprintln!("Failed to log profile update: {}", e);
     }
 
@@ -264,19 +295,23 @@ pub async fn change_password(
     match state.auth_service.change_password(user_id, request).await {
         Ok(_) => {
             // Log successful password change
-            if let Err(e) = state.audit_log_service.log_admin_action(
-                Some(user_id),
-                Some(claims.username.clone()),
-                "password_changed",
-                "authentication",
-                Some(user_id),
-                Some(format!("Password for {}", claims.username)),
-                Some("Password changed successfully".to_string()),
-                None,
-                None,
-                true,
-                None,
-            ).await {
+            if let Err(e) = state
+                .audit_log_service
+                .log_admin_action(
+                    Some(user_id),
+                    Some(claims.username.clone()),
+                    "password_changed",
+                    "authentication",
+                    Some(user_id),
+                    Some(format!("Password for {}", claims.username)),
+                    Some("Password changed successfully".to_string()),
+                    None,
+                    None,
+                    true,
+                    None,
+                )
+                .await
+            {
                 eprintln!("Failed to log password change: {}", e);
             }
 
@@ -287,19 +322,23 @@ pub async fn change_password(
         }
         Err(e) => {
             // Log failed password change
-            if let Err(log_err) = state.audit_log_service.log_admin_action(
-                Some(user_id),
-                Some(claims.username.clone()),
-                "password_change_failed",
-                "authentication",
-                Some(user_id),
-                Some(format!("Password for {}", claims.username)),
-                Some("Password change failed".to_string()),
-                None,
-                None,
-                false,
-                Some(e.to_string()),
-            ).await {
+            if let Err(log_err) = state
+                .audit_log_service
+                .log_admin_action(
+                    Some(user_id),
+                    Some(claims.username.clone()),
+                    "password_change_failed",
+                    "authentication",
+                    Some(user_id),
+                    Some(format!("Password for {}", claims.username)),
+                    Some("Password change failed".to_string()),
+                    None,
+                    None,
+                    false,
+                    Some(e.to_string()),
+                )
+                .await
+            {
                 eprintln!("Failed to log failed password change: {}", log_err);
             }
 

@@ -78,9 +78,7 @@ impl IntoResponse for AppError {
                     "Internal server error".to_string(),
                 )
             }
-            AppError::Validation(msg) => {
-                (StatusCode::BAD_REQUEST, "VALIDATION_ERROR", msg.clone())
-            }
+            AppError::Validation(msg) => (StatusCode::BAD_REQUEST, "VALIDATION_ERROR", msg.clone()),
             AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", msg.clone()),
             AppError::Forbidden(msg) => (StatusCode::FORBIDDEN, "FORBIDDEN", msg.clone()),
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "NOT_FOUND", msg.clone()),
@@ -91,7 +89,10 @@ impl IntoResponse for AppError {
                 "RATE_LIMIT",
                 "Too many requests".to_string(),
             ),
-            AppError::TooManyRequests { message, retry_after: _ } => (
+            AppError::TooManyRequests {
+                message,
+                retry_after: _,
+            } => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "TOO_MANY_REQUESTS",
                 message.clone(),

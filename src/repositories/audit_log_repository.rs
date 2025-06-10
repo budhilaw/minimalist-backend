@@ -1,7 +1,9 @@
-use crate::models::audit_log::{AuditLog, CreateAuditLogRequest, AuditLogFilters, AuditLogResponse};
+use crate::models::audit_log::{
+    AuditLog, AuditLogFilters, AuditLogResponse, CreateAuditLogRequest,
+};
+use anyhow::Result;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
-use anyhow::Result;
 
 pub struct AuditLogRepository {
     pool: PgPool,
@@ -124,10 +126,7 @@ impl AuditLogRepository {
         };
 
         // Get total count
-        let count_query = format!(
-            "SELECT COUNT(*) as count FROM audit_logs {}",
-            where_clause
-        );
+        let count_query = format!("SELECT COUNT(*) as count FROM audit_logs {}", where_clause);
 
         let total_count: i64 = sqlx::query(&count_query)
             .fetch_one(&self.pool)
@@ -172,7 +171,7 @@ impl AuditLogRepository {
 
     pub async fn get_by_user_id(&self, user_id: Uuid, limit: Option<i64>) -> Result<Vec<AuditLog>> {
         let limit = limit.unwrap_or(50);
-        
+
         let logs = sqlx::query_as!(
             AuditLog,
             r#"
@@ -193,7 +192,11 @@ impl AuditLogRepository {
         Ok(logs)
     }
 
-    pub async fn get_by_resource(&self, resource_type: String, resource_id: Uuid) -> Result<Vec<AuditLog>> {
+    pub async fn get_by_resource(
+        &self,
+        resource_type: String,
+        resource_id: Uuid,
+    ) -> Result<Vec<AuditLog>> {
         let logs = sqlx::query_as!(
             AuditLog,
             r#"
@@ -215,7 +218,7 @@ impl AuditLogRepository {
 
     pub async fn get_recent_logs(&self, limit: Option<i64>) -> Result<Vec<AuditLog>> {
         let limit = limit.unwrap_or(10);
-        
+
         let logs = sqlx::query_as!(
             AuditLog,
             r#"
@@ -236,7 +239,7 @@ impl AuditLogRepository {
 
     pub async fn get_failed_actions(&self, limit: Option<i64>) -> Result<Vec<AuditLog>> {
         let limit = limit.unwrap_or(20);
-        
+
         let logs = sqlx::query_as!(
             AuditLog,
             r#"
@@ -266,4 +269,4 @@ impl AuditLogRepository {
 
         Ok(result.rows_affected())
     }
-} 
+}

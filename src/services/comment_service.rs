@@ -100,7 +100,7 @@ impl CommentServiceTrait for CommentService {
 
         // Business logic: Auto-moderate based on content and email
         let requires_moderation = self.requires_moderation(&request.content, &request.author_email);
-        
+
         // Determine initial status
         let initial_status = if requires_moderation {
             "pending"
@@ -297,10 +297,11 @@ impl CommentService {
         let content_lower = content.to_lowercase();
 
         // Check for spam keywords
-        let keyword_matches = spam_keywords.iter()
+        let keyword_matches = spam_keywords
+            .iter()
             .filter(|&keyword| content_lower.contains(keyword))
             .count();
-        
+
         // If multiple spam keywords found, definitely spam
         if keyword_matches >= 2 {
             return true;
@@ -347,17 +348,18 @@ impl CommentService {
     fn requires_moderation(&self, content: &str, email: &str) -> bool {
         // Auto-approve comments from known good email domains (for trusted organizations)
         let trusted_domains = ["@gmail.com", "@outlook.com", "@yahoo.com", "@hotmail.com"];
-        let is_trusted_domain = trusted_domains.iter()
+        let is_trusted_domain = trusted_domains
+            .iter()
             .any(|domain| email.to_lowercase().ends_with(domain));
 
         // Comments with certain keywords require moderation
         let moderation_keywords = [
-            "admin", 
-            "moderator", 
-            "complaint", 
-            "report", 
-            "bug", 
-            "issue", 
+            "admin",
+            "moderator",
+            "complaint",
+            "report",
+            "bug",
+            "issue",
             "problem",
             "copyright",
             "dmca",
@@ -387,16 +389,22 @@ impl CommentService {
 
     async fn check_rate_limit(&self, ip_address: &str) -> Result<bool> {
         // Enhanced rate limiting: check comments from this IP in the last hour
-        let recent_comments_count = self.repository.count_recent_comments_by_ip(ip_address, 3600).await?;
-        
+        let recent_comments_count = self
+            .repository
+            .count_recent_comments_by_ip(ip_address, 3600)
+            .await?;
+
         // Allow max 3 comments per hour from same IP
         if recent_comments_count >= 3 {
             return Ok(true);
         }
 
         // Check comments from this IP in the last 5 minutes for rapid spam
-        let very_recent_comments = self.repository.count_recent_comments_by_ip(ip_address, 300).await?;
-        
+        let very_recent_comments = self
+            .repository
+            .count_recent_comments_by_ip(ip_address, 300)
+            .await?;
+
         // Allow max 1 comment per 5 minutes from same IP
         if very_recent_comments >= 1 {
             return Ok(true);

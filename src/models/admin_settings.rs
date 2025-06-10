@@ -97,9 +97,11 @@ impl Default for GeneralSettings {
     fn default() -> Self {
         Self {
             site_name: "John Doe Portfolio".to_string(),
-            site_description: "Senior Software Engineer specializing in consulting and freelancing".to_string(),
+            site_description: "Senior Software Engineer specializing in consulting and freelancing"
+                .to_string(),
             maintenance_mode: false,
-            maintenance_message: "The site is currently under maintenance. Please check back later.".to_string(),
+            maintenance_message:
+                "The site is currently under maintenance. Please check back later.".to_string(),
         }
     }
 }
@@ -152,4 +154,4 @@ impl Default for AdminSettings {
             updated_by: None,
         }
     }
-} 
+}

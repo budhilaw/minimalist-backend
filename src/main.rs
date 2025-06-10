@@ -1,6 +1,6 @@
 use axum::{
     middleware,
-    routing::{get, post, put, delete},
+    routing::{delete, get, post, put},
     Router,
 };
 use std::{env, net::SocketAddr, sync::Arc};
@@ -25,12 +25,9 @@ use portfolio_backend::{
         },
     },
     repositories::{
-        AdminSettingsRepository, AuditLogRepository,
-        comment_repository::CommentRepository,
-        portfolio_repository::PortfolioRepository,
-        post_repository::PostRepository,
-        service_repository::ServiceRepository,
-        user_repository::UserRepository,
+        comment_repository::CommentRepository, portfolio_repository::PortfolioRepository,
+        post_repository::PostRepository, service_repository::ServiceRepository,
+        user_repository::UserRepository, AdminSettingsRepository, AuditLogRepository,
     },
     services::{
         admin_settings_service::{AdminSettingsService, AdminSettingsServiceTrait},
@@ -104,18 +101,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize Redis rate limiter
     let rate_limiter = match config.get_redis_url() {
-        Ok(redis_url) => {
-            match create_rate_limiter(&config.security, &redis_url).await {
-                Ok(limiter) => {
-                    info!("Redis rate limiter initialized successfully");
-                    Some(limiter)
-                }
-                Err(e) => {
-                    tracing::warn!("Failed to initialize Redis rate limiter: {}", e);
-                    None
-                }
+        Ok(redis_url) => match create_rate_limiter(&config.security, redis_url).await {
+            Ok(limiter) => {
+                info!("Redis rate limiter initialized successfully");
+                Some(limiter)
             }
-        }
+            Err(e) => {
+                tracing::warn!("Failed to initialize Redis rate limiter: {}", e);
+                None
+            }
+        },
         Err(e) => {
             tracing::warn!("Redis URL not configured: {}", e);
             None
@@ -127,18 +122,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_state = service::ServiceState { service_service };
     let post_state = post::PostState { blog_service };
     let comment_state = comment::CommentState { comment_service };
-    let audit_log_state = audit_log::AuditLogState { 
-        audit_log_service: audit_log_service.clone() 
+    let audit_log_state = audit_log::AuditLogState {
+        audit_log_service: audit_log_service.clone(),
     };
-    let admin_settings_state = admin_settings::AdminSettingsState { 
+    let admin_settings_state = admin_settings::AdminSettingsState {
         admin_settings_service,
         rate_limiter: rate_limiter.clone(),
     };
-    
+
     // Create auth state with auth service, audit log service, and rate limiter
     let auth_state = auth::AuthState {
         auth_service: auth_service.clone(),
-        audit_log_service: audit_log_service,
+        audit_log_service,
         rate_limiter: rate_limiter.clone(),
     };
 
@@ -161,13 +156,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create server
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
 
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn create_app(
     auth_state: auth::AuthState,
     portfolio_state: portfolio::PortfolioState,
@@ -280,7 +279,10 @@ fn create_app(
     // Comment routes (protected for admin)
     let comment_protected_routes = Router::new()
         .route("/", get(comment::get_all_comments))
-        .route("/:id", get(comment::get_comment).delete(comment::delete_comment))
+        .route(
+            "/:id",
+            get(comment::get_comment).delete(comment::delete_comment),
+        )
         .route("/:id/status", put(comment::update_comment_status))
         .route("/stats", get(comment::get_comment_stats))
         .with_state(comment_state.clone())
@@ -314,14 +316,29 @@ fn create_app(
         .route("/features", put(admin_settings::update_feature_settings))
         .route("/security", get(admin_settings::get_settings))
         .route("/security", put(admin_settings::update_security_settings))
-        .route("/security/blocked-ips", get(admin_settings::get_blocked_ips))
+        .route(
+            "/security/blocked-ips",
+            get(admin_settings::get_blocked_ips),
+        )
         .route("/security/block-ip", post(admin_settings::block_ip))
-        .route("/security/blocked-ips/:ip", delete(admin_settings::unblock_ip))
+        .route(
+            "/security/blocked-ips/:ip",
+            delete(admin_settings::unblock_ip),
+        )
         .route("/security/stats", get(admin_settings::get_security_stats))
         .route("/reset", post(admin_settings::reset_settings))
-        .route("/features/:feature/enabled", get(admin_settings::is_feature_enabled))
-        .route("/maintenance-mode", get(admin_settings::get_maintenance_mode))
-        .route("/maintenance-mode", put(admin_settings::get_maintenance_mode))
+        .route(
+            "/features/:feature/enabled",
+            get(admin_settings::is_feature_enabled),
+        )
+        .route(
+            "/maintenance-mode",
+            get(admin_settings::get_maintenance_mode),
+        )
+        .route(
+            "/maintenance-mode",
+            put(admin_settings::get_maintenance_mode),
+        )
         .with_state(admin_settings_state)
         .route_layer(middleware::from_fn_with_state(
             auth_state.auth_service.clone(),

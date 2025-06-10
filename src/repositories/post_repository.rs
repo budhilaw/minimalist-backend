@@ -235,10 +235,10 @@ impl PostRepositoryTrait for PostRepository {
     }
 
     async fn get_published(&self, limit: Option<u32>) -> Result<Vec<Post>, AppError> {
-        use tracing::{info, error};
-        
+        use tracing::{error, info};
+
         let limit = limit.unwrap_or(10).min(50);
-        
+
         info!("get_published: Starting with limit: {}", limit);
 
         let posts = sqlx::query_as::<_, Post>(

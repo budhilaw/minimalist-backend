@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::types::ipnetwork::IpNetwork;
 use sqlx::FromRow;
 use uuid::Uuid;
-use sqlx::types::ipnetwork::IpNetwork;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct AuditLog {
@@ -69,67 +69,68 @@ pub enum AuditAction {
     Login,
     Logout,
     LoginFailed,
-    
+
     // Posts
     PostCreated,
     PostUpdated,
     PostDeleted,
     PostPublished,
     PostUnpublished,
-    
+
     // Portfolio
     PortfolioCreated,
     PortfolioUpdated,
     PortfolioDeleted,
     PortfolioFeatured,
     PortfolioUnfeatured,
-    
+
     // Services
     ServiceCreated,
     ServiceUpdated,
     ServiceDeleted,
     ServiceActivated,
     ServiceDeactivated,
-    
+
     // Comments
     CommentApproved,
     CommentRejected,
     CommentDeleted,
-    
+
     // Settings
     SettingsUpdated,
-    
+
     // Profile
     ProfileUpdated,
 }
 
-impl ToString for AuditAction {
-    fn to_string(&self) -> String {
-        match self {
-            AuditAction::Login => "login".to_string(),
-            AuditAction::Logout => "logout".to_string(),
-            AuditAction::LoginFailed => "login_failed".to_string(),
-            AuditAction::PostCreated => "post_created".to_string(),
-            AuditAction::PostUpdated => "post_updated".to_string(),
-            AuditAction::PostDeleted => "post_deleted".to_string(),
-            AuditAction::PostPublished => "post_published".to_string(),
-            AuditAction::PostUnpublished => "post_unpublished".to_string(),
-            AuditAction::PortfolioCreated => "portfolio_created".to_string(),
-            AuditAction::PortfolioUpdated => "portfolio_updated".to_string(),
-            AuditAction::PortfolioDeleted => "portfolio_deleted".to_string(),
-            AuditAction::PortfolioFeatured => "portfolio_featured".to_string(),
-            AuditAction::PortfolioUnfeatured => "portfolio_unfeatured".to_string(),
-            AuditAction::ServiceCreated => "service_created".to_string(),
-            AuditAction::ServiceUpdated => "service_updated".to_string(),
-            AuditAction::ServiceDeleted => "service_deleted".to_string(),
-            AuditAction::ServiceActivated => "service_activated".to_string(),
-            AuditAction::ServiceDeactivated => "service_deactivated".to_string(),
-            AuditAction::CommentApproved => "comment_approved".to_string(),
-            AuditAction::CommentRejected => "comment_rejected".to_string(),
-            AuditAction::CommentDeleted => "comment_deleted".to_string(),
-            AuditAction::SettingsUpdated => "settings_updated".to_string(),
-            AuditAction::ProfileUpdated => "profile_updated".to_string(),
-        }
+impl std::fmt::Display for AuditAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AuditAction::Login => "login",
+            AuditAction::Logout => "logout",
+            AuditAction::LoginFailed => "login_failed",
+            AuditAction::PostCreated => "post_created",
+            AuditAction::PostUpdated => "post_updated",
+            AuditAction::PostDeleted => "post_deleted",
+            AuditAction::PostPublished => "post_published",
+            AuditAction::PostUnpublished => "post_unpublished",
+            AuditAction::PortfolioCreated => "portfolio_created",
+            AuditAction::PortfolioUpdated => "portfolio_updated",
+            AuditAction::PortfolioDeleted => "portfolio_deleted",
+            AuditAction::PortfolioFeatured => "portfolio_featured",
+            AuditAction::PortfolioUnfeatured => "portfolio_unfeatured",
+            AuditAction::ServiceCreated => "service_created",
+            AuditAction::ServiceUpdated => "service_updated",
+            AuditAction::ServiceDeleted => "service_deleted",
+            AuditAction::ServiceActivated => "service_activated",
+            AuditAction::ServiceDeactivated => "service_deactivated",
+            AuditAction::CommentApproved => "comment_approved",
+            AuditAction::CommentRejected => "comment_rejected",
+            AuditAction::CommentDeleted => "comment_deleted",
+            AuditAction::SettingsUpdated => "settings_updated",
+            AuditAction::ProfileUpdated => "profile_updated",
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -144,16 +145,17 @@ pub enum ResourceType {
     Profile,
 }
 
-impl ToString for ResourceType {
-    fn to_string(&self) -> String {
-        match self {
-            ResourceType::Authentication => "authentication".to_string(),
-            ResourceType::Post => "post".to_string(),
-            ResourceType::Portfolio => "portfolio".to_string(),
-            ResourceType::Service => "service".to_string(),
-            ResourceType::Comment => "comment".to_string(),
-            ResourceType::Settings => "settings".to_string(),
-            ResourceType::Profile => "profile".to_string(),
-        }
+impl std::fmt::Display for ResourceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            ResourceType::Authentication => "authentication",
+            ResourceType::Post => "post",
+            ResourceType::Portfolio => "portfolio",
+            ResourceType::Service => "service",
+            ResourceType::Comment => "comment",
+            ResourceType::Settings => "settings",
+            ResourceType::Profile => "profile",
+        };
+        write!(f, "{}", s)
     }
-} 
+}

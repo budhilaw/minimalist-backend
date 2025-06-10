@@ -116,11 +116,7 @@ impl ServiceServiceTrait for ServiceService {
 }
 
 impl ServiceService {
-    fn validate_service_request(
-        &self,
-        title: &str,
-        description: &str,
-    ) -> Result<()> {
+    fn validate_service_request(&self, title: &str, description: &str) -> Result<()> {
         if title.trim().is_empty() {
             return Err(AppError::Validation(
                 "Service title cannot be empty".to_string(),

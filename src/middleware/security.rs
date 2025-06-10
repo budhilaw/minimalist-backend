@@ -6,32 +6,30 @@ use axum::{
 };
 use std::{sync::Arc, time::Duration};
 
-use crate::utils::{config::SecurityConfig, errors::AppError};
 use super::rate_limiter::RedisRateLimiter;
+use crate::utils::{config::SecurityConfig, errors::AppError};
 
 // Create rate limiter with Redis backend
 pub async fn create_rate_limiter(
-    security_config: &SecurityConfig, 
-    redis_url: &str
+    security_config: &SecurityConfig,
+    redis_url: &str,
 ) -> Result<Arc<RedisRateLimiter>, Box<dyn std::error::Error + Send + Sync>> {
     // Configure rate limiting parameters
     let limiter = RedisRateLimiter::new(
         redis_url,
         // Authentication rate limiting
-        20,    // auth_ip_limit: 20 attempts per IP
-        300,   // auth_ip_window_seconds: 5 minutes
-        5,     // auth_user_limit: 5 attempts per username
-        900,   // auth_user_window_seconds: 15 minutes
-        
+        20,  // auth_ip_limit: 20 attempts per IP
+        300, // auth_ip_window_seconds: 5 minutes
+        5,   // auth_user_limit: 5 attempts per username
+        900, // auth_user_window_seconds: 15 minutes
         // IP blocking thresholds
-        5,     // ip_block_threshold: Block after 5 total failures
-        24,    // ip_block_duration_hours: Block for 24 hours (0 = permanent)
-        
+        5,  // ip_block_threshold: Block after 5 total failures
+        24, // ip_block_duration_hours: Block for 24 hours (0 = permanent)
         // General API rate limiting
         security_config.rate_limit.requests_per_minute as u32,
-        60,    // api_window_seconds: 1 minute
+        60, // api_window_seconds: 1 minute
     )?;
-    
+
     Ok(Arc::new(limiter))
 }
 

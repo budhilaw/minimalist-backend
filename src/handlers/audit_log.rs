@@ -5,11 +5,11 @@ use axum::{
 };
 use serde_json::{json, Value};
 use std::sync::Arc;
-use uuid::Uuid;
 use tracing::info;
+use uuid::Uuid;
 
 use crate::{
-    models::audit_log::{CreateAuditLogRequest, AuditLogFilters},
+    models::audit_log::{AuditLogFilters, CreateAuditLogRequest},
     services::audit_log_service::AuditLogServiceTrait,
     utils::errors::AppError,
 };
@@ -24,11 +24,20 @@ pub async fn get_audit_logs(
     State(state): State<AuditLogState>,
     Query(filters): Query<AuditLogFilters>,
 ) -> Result<Json<Value>, AppError> {
-    info!("get_audit_logs: Starting request with filters: {:?}", filters);
-    
-    let response = state.audit_log_service.get_all_with_filters(filters).await?;
-    
-    info!("get_audit_logs: Successfully fetched {} logs", response.logs.len());
+    info!(
+        "get_audit_logs: Starting request with filters: {:?}",
+        filters
+    );
+
+    let response = state
+        .audit_log_service
+        .get_all_with_filters(filters)
+        .await?;
+
+    info!(
+        "get_audit_logs: Successfully fetched {} logs",
+        response.logs.len()
+    );
     Ok(Json(json!(response)))
 }
 
@@ -52,10 +61,13 @@ pub async fn create_audit_log(
     Json(payload): Json<CreateAuditLogRequest>,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
     info!("create_audit_log: Creating new audit log entry");
-    
+
     let audit_log = state.audit_log_service.create(payload).await?;
 
-    info!("create_audit_log: Successfully created audit log with id: {}", audit_log.id);
+    info!(
+        "create_audit_log: Successfully created audit log with id: {}",
+        audit_log.id
+    );
     Ok((
         StatusCode::CREATED,
         Json(json!({
@@ -154,12 +166,17 @@ pub async fn cleanup_old_audit_logs(
         .unwrap_or(365); // Default to 1 year
 
     if days < 30 {
-        return Err(AppError::BadRequest("Cannot delete logs newer than 30 days".to_string()));
+        return Err(AppError::BadRequest(
+            "Cannot delete logs newer than 30 days".to_string(),
+        ));
     }
 
     let deleted_count = state.audit_log_service.delete_old_logs(days).await?;
 
-    info!("cleanup_old_audit_logs: Deleted {} logs older than {} days", deleted_count, days);
+    info!(
+        "cleanup_old_audit_logs: Deleted {} logs older than {} days",
+        deleted_count, days
+    );
     Ok(Json(json!({
         "message": format!("Deleted {} old audit logs", deleted_count),
         "deleted_count": deleted_count,
@@ -174,4 +191,4 @@ pub async fn get_audit_log_stats(
     let stats = state.audit_log_service.get_stats().await?;
 
     Ok(Json(json!(stats)))
-} 
+}

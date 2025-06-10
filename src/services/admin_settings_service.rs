@@ -1,12 +1,12 @@
+use anyhow::Result;
 use async_trait::async_trait;
 use std::sync::Arc;
 use uuid::Uuid;
-use anyhow::Result;
 
 use crate::{
     models::admin_settings::{
-        AdminSettingsRecord, AdminSettings, GeneralSettings, FeatureSettings,
-        NotificationSettings, SecuritySettings, UpdateSettingsRequest
+        AdminSettings, AdminSettingsRecord, FeatureSettings, GeneralSettings, NotificationSettings,
+        SecuritySettings, UpdateSettingsRequest,
     },
     repositories::AdminSettingsRepository,
 };
@@ -15,12 +15,37 @@ use crate::{
 pub trait AdminSettingsServiceTrait: Send + Sync {
     async fn get_all_settings(&self) -> Result<AdminSettings>;
     async fn get_setting(&self, key: &str) -> Result<Option<AdminSettingsRecord>>;
-    async fn update_settings(&self, request: UpdateSettingsRequest, updated_by: Option<Uuid>) -> Result<AdminSettings>;
-    async fn update_setting(&self, key: &str, value: serde_json::Value, updated_by: Option<Uuid>) -> Result<AdminSettingsRecord>;
-    async fn update_general_settings(&self, settings: GeneralSettings, updated_by: Option<Uuid>) -> Result<AdminSettings>;
-    async fn update_feature_settings(&self, settings: FeatureSettings, updated_by: Option<Uuid>) -> Result<AdminSettings>;
-    async fn update_notification_settings(&self, settings: NotificationSettings, updated_by: Option<Uuid>) -> Result<AdminSettings>;
-    async fn update_security_settings(&self, settings: SecuritySettings, updated_by: Option<Uuid>) -> Result<AdminSettings>;
+    async fn update_settings(
+        &self,
+        request: UpdateSettingsRequest,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings>;
+    async fn update_setting(
+        &self,
+        key: &str,
+        value: serde_json::Value,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettingsRecord>;
+    async fn update_general_settings(
+        &self,
+        settings: GeneralSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings>;
+    async fn update_feature_settings(
+        &self,
+        settings: FeatureSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings>;
+    async fn update_notification_settings(
+        &self,
+        settings: NotificationSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings>;
+    async fn update_security_settings(
+        &self,
+        settings: SecuritySettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings>;
     async fn reset_to_defaults(&self, updated_by: Option<Uuid>) -> Result<AdminSettings>;
     async fn is_feature_enabled(&self, feature: &str) -> Result<bool>;
     async fn is_maintenance_mode(&self) -> Result<bool>;
@@ -40,7 +65,7 @@ impl AdminSettingsService {
     fn validate_feature_settings(&self, settings: &FeatureSettings) -> Result<()> {
         // Add any business logic validation here
         // For example, ensure certain features are not disabled together
-        
+
         if !settings.blog_enabled && !settings.portfolio_enabled && !settings.services_enabled {
             return Err(anyhow::anyhow!(
                 "At least one main feature (blog, portfolio, or services) must be enabled"
@@ -68,7 +93,8 @@ impl AdminSettingsService {
         for ip in &settings.ip_whitelist {
             if !self.is_valid_ip_or_cidr(ip) {
                 return Err(anyhow::anyhow!(
-                    "Invalid IP address or CIDR notation: {}", ip
+                    "Invalid IP address or CIDR notation: {}",
+                    ip
                 ));
             }
         }
@@ -85,12 +111,12 @@ impl AdminSettingsService {
             if parts.len() != 2 {
                 return false;
             }
-            
+
             // Validate IP part
             if !self.is_valid_ip(parts[0]) {
                 return false;
             }
-            
+
             // Validate prefix length
             if let Ok(prefix) = parts[1].parse::<u8>() {
                 prefix <= 32 // For IPv4
@@ -110,7 +136,7 @@ impl AdminSettingsService {
     // Helper method to get feature-specific settings
     pub async fn get_feature_config(&self, feature: &str) -> Result<serde_json::Value> {
         let settings = self.get_all_settings().await?;
-        
+
         match feature {
             "comments" => Ok(serde_json::json!({
                 "enabled": settings.features.comments_enabled,
@@ -137,7 +163,7 @@ impl AdminSettingsService {
                 "enabled": settings.features.search_enabled,
                 "index_content": true // Could be configurable
             })),
-            _ => Err(anyhow::anyhow!("Unknown feature: {}", feature))
+            _ => Err(anyhow::anyhow!("Unknown feature: {}", feature)),
         }
     }
 }
@@ -152,7 +178,11 @@ impl AdminSettingsServiceTrait for AdminSettingsService {
         self.repository.get_setting(key).await
     }
 
-    async fn update_settings(&self, request: UpdateSettingsRequest, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    async fn update_settings(
+        &self,
+        request: UpdateSettingsRequest,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         // Validate each section if provided
         if let Some(ref features) = request.features {
             self.validate_feature_settings(features)?;
@@ -164,26 +194,39 @@ impl AdminSettingsServiceTrait for AdminSettingsService {
 
         // Update each section that was provided
         if let Some(general) = request.general {
-            self.repository.update_general_settings(general, updated_by).await?;
+            self.repository
+                .update_general_settings(general, updated_by)
+                .await?;
         }
 
         if let Some(features) = request.features {
-            self.repository.update_feature_settings(features, updated_by).await?;
+            self.repository
+                .update_feature_settings(features, updated_by)
+                .await?;
         }
 
         if let Some(notifications) = request.notifications {
-            self.repository.update_notification_settings(notifications, updated_by).await?;
+            self.repository
+                .update_notification_settings(notifications, updated_by)
+                .await?;
         }
 
         if let Some(security) = request.security {
-            self.repository.update_security_settings(security, updated_by).await?;
+            self.repository
+                .update_security_settings(security, updated_by)
+                .await?;
         }
 
         // Return the updated settings
         self.repository.get_all_settings().await
     }
 
-    async fn update_setting(&self, key: &str, value: serde_json::Value, updated_by: Option<Uuid>) -> Result<AdminSettingsRecord> {
+    async fn update_setting(
+        &self,
+        key: &str,
+        value: serde_json::Value,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettingsRecord> {
         // Validate the setting based on its key
         match key {
             "features" => {
@@ -208,36 +251,64 @@ impl AdminSettingsServiceTrait for AdminSettingsService {
         self.repository.update_setting(key, value, updated_by).await
     }
 
-    async fn update_general_settings(&self, settings: GeneralSettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    async fn update_general_settings(
+        &self,
+        settings: GeneralSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         // Validate general settings
         if settings.site_name.trim().is_empty() {
             return Err(anyhow::anyhow!("Site name cannot be empty"));
         }
 
         if settings.site_description.len() > 500 {
-            return Err(anyhow::anyhow!("Site description cannot exceed 500 characters"));
+            return Err(anyhow::anyhow!(
+                "Site description cannot exceed 500 characters"
+            ));
         }
 
         if settings.maintenance_message.len() > 1000 {
-            return Err(anyhow::anyhow!("Maintenance message cannot exceed 1000 characters"));
+            return Err(anyhow::anyhow!(
+                "Maintenance message cannot exceed 1000 characters"
+            ));
         }
 
-        self.repository.update_general_settings(settings, updated_by).await
+        self.repository
+            .update_general_settings(settings, updated_by)
+            .await
     }
 
-    async fn update_feature_settings(&self, settings: FeatureSettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    async fn update_feature_settings(
+        &self,
+        settings: FeatureSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         self.validate_feature_settings(&settings)?;
-        self.repository.update_feature_settings(settings, updated_by).await
+        self.repository
+            .update_feature_settings(settings, updated_by)
+            .await
     }
 
-    async fn update_notification_settings(&self, settings: NotificationSettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    async fn update_notification_settings(
+        &self,
+        settings: NotificationSettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         // No specific validation needed for notification settings currently
-        self.repository.update_notification_settings(settings, updated_by).await
+        self.repository
+            .update_notification_settings(settings, updated_by)
+            .await
     }
 
-    async fn update_security_settings(&self, settings: SecuritySettings, updated_by: Option<Uuid>) -> Result<AdminSettings> {
+    async fn update_security_settings(
+        &self,
+        settings: SecuritySettings,
+        updated_by: Option<Uuid>,
+    ) -> Result<AdminSettings> {
         self.validate_security_settings(&settings)?;
-        self.repository.update_security_settings(settings, updated_by).await
+        self.repository
+            .update_security_settings(settings, updated_by)
+            .await
     }
 
     async fn reset_to_defaults(&self, updated_by: Option<Uuid>) -> Result<AdminSettings> {
@@ -255,4 +326,4 @@ impl AdminSettingsServiceTrait for AdminSettingsService {
     async fn get_maintenance_message(&self) -> Result<String> {
         self.repository.get_maintenance_message().await
     }
-} 
+}

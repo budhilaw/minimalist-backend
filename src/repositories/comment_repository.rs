@@ -42,7 +42,11 @@ pub trait CommentRepositoryTrait: Send + Sync {
     async fn get_stats(&self) -> Result<CommentStats, AppError>;
     async fn get_replies(&self, parent_id: Uuid) -> Result<Vec<Comment>, AppError>;
     async fn bulk_update_status(&self, ids: Vec<Uuid>, status: String) -> Result<i64, AppError>;
-    async fn count_recent_comments_by_ip(&self, ip_address: &str, seconds_ago: i64) -> Result<i64, AppError>;
+    async fn count_recent_comments_by_ip(
+        &self,
+        ip_address: &str,
+        seconds_ago: i64,
+    ) -> Result<i64, AppError>;
 }
 
 pub struct CommentRepository {
@@ -339,7 +343,11 @@ impl CommentRepositoryTrait for CommentRepository {
         Ok(result.rows_affected() as i64)
     }
 
-    async fn count_recent_comments_by_ip(&self, ip_address: &str, seconds_ago: i64) -> Result<i64, AppError> {
+    async fn count_recent_comments_by_ip(
+        &self,
+        ip_address: &str,
+        seconds_ago: i64,
+    ) -> Result<i64, AppError> {
         let result = sqlx::query_scalar(
             "SELECT COUNT(*) FROM comments WHERE ip_address = $1 AND created_at >= NOW() - INTERVAL '1 second' * $2"
         )
