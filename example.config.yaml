@@ -1,0 +1,76 @@
+# Portfolio Backend Configuration Template
+# Copy this file to .config.yaml and customize for your environment
+
+server:
+  host: "0.0.0.0"  # Bind to all interfaces (use "127.0.0.1" for localhost only)
+  port: 8000       # HTTP port for the server
+  workers: 4       # Number of worker threads (adjust based on CPU cores)
+  read_timeout: 30 # Seconds to wait for reading request
+  write_timeout: 30 # Seconds to wait for writing response
+
+database:
+  max_connections: 20    # Maximum database connections in pool
+  min_connections: 1     # Minimum database connections maintained
+  connect_timeout: 30    # Seconds to wait for database connection
+  idle_timeout: 600      # Seconds before closing idle connections
+  max_lifetime: 3600     # Seconds before connection is recreated
+
+redis:
+  pool_size: 10          # Redis connection pool size
+  timeout: 5             # Redis operation timeout in seconds
+  connection_timeout: 10 # Redis connection timeout in seconds
+  max_connections: 50    # Maximum Redis connections
+
+auth:
+  token_expiry: 86400        # JWT token expiry (24 hours)
+  refresh_token_expiry: 604800 # Refresh token expiry (7 days)
+  bcrypt_cost: 12            # Bcrypt hashing cost (10-12 recommended)
+
+security:
+  rate_limit:
+    requests_per_minute: 60  # API rate limit per IP
+    burst_size: 10           # Burst allowance for rate limiting
+  cors:
+    allowed_origins:         # CORS allowed origins
+      - "http://localhost:3000"    # React development server
+      - "http://localhost:5173"    # Vite development server
+      - "https://yourdomain.com"   # Your production domain
+    allowed_methods:         # HTTP methods allowed by CORS
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "PATCH"
+      - "OPTIONS"
+    allowed_headers:         # Headers allowed by CORS
+      - "Content-Type"
+      - "Authorization"
+      - "X-Requested-With"
+    expose_headers:          # Headers exposed to client
+      - "X-Total-Count"
+      - "X-Page-Count"
+    max_age: 3600           # CORS preflight cache time
+
+logging:
+  level: "info"            # Log level: trace, debug, info, warn, error
+  format: "json"           # Log format: json or pretty
+  enable_console: true     # Enable console logging
+  enable_file: false       # Enable file logging
+
+environment: "development"  # Environment: development, staging, production
+
+pagination:
+  default_limit: 10        # Default items per page
+  max_limit: 100          # Maximum items per page
+
+file_upload:
+  max_size: 10485760      # Maximum file size (10MB)
+  allowed_types:          # Allowed MIME types for uploads
+    - "image/jpeg"
+    - "image/png"
+    - "image/webp"
+    - "image/gif"
+
+cache:
+  default_ttl: 3600       # Default cache TTL (1 hour)
+  user_session_ttl: 86400 # User session cache TTL (24 hours) 

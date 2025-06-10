@@ -1,0 +1,76 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Security - NEVER commit these files
+.config.yaml
+.secret.yaml
+.env
+.env.local
+.env.production
+.env.test
+*.pem
+*.key
+*.crt
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Backup files
+*.bak
+*.backup
+
+# Testing
+.nyc_output
+
+# Build artifacts
+dist/
+build/
+
+# Documentation
+docs/build/
+
+# Cache
+.cache/
+
+# sql
+.sqlx
