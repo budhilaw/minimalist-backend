@@ -12,8 +12,8 @@ use validator::Validate;
 use crate::{
     middleware::rate_limiter::{BlockedIpInfo, RedisRateLimiter},
     models::admin_settings::{
-        FeatureSettings, GeneralSettings, NotificationSettings, SecuritySettings, SocialMediaLinks,
-        UpdateSettingsRequest,
+        FeatureSettings, FilesSettings, GeneralSettings, NotificationSettings, SecuritySettings,
+        SocialMediaLinks, UpdateSettingsRequest,
     },
     services::admin_settings_service::AdminSettingsServiceTrait,
     services::auth_service::Claims,
@@ -28,7 +28,9 @@ pub struct PublicSiteSettings {
     pub maintenance_mode: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub maintenance_message: Option<String>,
+    pub photo_profile: Option<String>,
     pub social_media_links: SocialMediaLinks,
+    pub files: FilesSettings,
 }
 
 #[derive(Debug, Serialize)]
@@ -490,7 +492,9 @@ pub async fn get_public_settings(
             } else {
                 None
             },
+            photo_profile: settings.general.photo_profile,
             social_media_links: settings.general.social_media_links,
+            files: settings.general.files,
         },
         features: PublicFeatureSettings {
             portfolio_enabled: settings.features.portfolio_enabled,

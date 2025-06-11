@@ -35,7 +35,9 @@ pub struct GeneralSettings {
     pub maintenance_mode: bool,
     #[serde(rename = "maintenanceMessage")]
     pub maintenance_message: String,
+    pub photo_profile: Option<String>,
     pub social_media_links: SocialMediaLinks,
+    pub files: FilesSettings,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,6 +106,11 @@ pub struct SocialMediaLinks {
     pub email: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FilesSettings {
+    pub resume_links: Option<String>,
+}
+
 impl Default for GeneralSettings {
     fn default() -> Self {
         Self {
@@ -113,7 +120,9 @@ impl Default for GeneralSettings {
             maintenance_mode: false,
             maintenance_message:
                 "The site is currently under maintenance. Please check back later.".to_string(),
+            photo_profile: None,
             social_media_links: SocialMediaLinks::default(),
+            files: FilesSettings::default(),
         }
     }
 }
@@ -160,9 +169,17 @@ impl Default for SocialMediaLinks {
             github: Some("https://github.com/budhilaw".to_string()),
             linkedin: Some("https://linkedin.com/in/budhilaw".to_string()),
             x: Some("https://x.com/ceritaeric".to_string()),
-            facebook: Some("https://facebook.com/ebudhilaw".to_string()),
+            facebook: Some("https://facebook.com/ceritaeric".to_string()),
             instagram: Some("https://instagram.com/ceritaeric".to_string()),
             email: Some("ericsson@budhilaw.com".to_string()),
+        }
+    }
+}
+
+impl Default for FilesSettings {
+    fn default() -> Self {
+        Self {
+            resume_links: Some("https://drive.google.com/".to_string()),
         }
     }
 }

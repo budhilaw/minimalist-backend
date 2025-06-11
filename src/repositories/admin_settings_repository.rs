@@ -31,6 +31,75 @@ impl AdminSettingsRepository {
         self.build_admin_settings(records).await
     }
 
+    /// Initialize default admin settings if they don't exist
+    /// This is safe to call multiple times - it won't overwrite existing settings
+    pub async fn ensure_settings_exist(&self) -> Result<()> {
+        // Check if any settings exist
+        let count = sqlx::query_scalar!("SELECT COUNT(*) FROM admin_settings")
+            .fetch_one(&self.pool)
+            .await?;
+
+        if count.unwrap_or(0) == 0 {
+            // No settings exist, create defaults
+            let default_settings = AdminSettings::default();
+
+            let general_value = serde_json::to_value(default_settings.general)?;
+            let features_value = serde_json::to_value(default_settings.features)?;
+            let notifications_value = serde_json::to_value(default_settings.notifications)?;
+            let security_value = serde_json::to_value(default_settings.security)?;
+
+            let mut tx = self.pool.begin().await?;
+
+            sqlx::query!(
+                "INSERT INTO admin_settings (id, setting_key, setting_value, description, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())",
+                uuid::Uuid::new_v4(),
+                "general",
+                general_value,
+                Some("General site settings and configuration")
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            sqlx::query!(
+                "INSERT INTO admin_settings (id, setting_key, setting_value, description, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())",
+                uuid::Uuid::new_v4(),
+                "features",
+                features_value,
+                Some("Feature toggles and availability")
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            sqlx::query!(
+                "INSERT INTO admin_settings (id, setting_key, setting_value, description, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())",
+                uuid::Uuid::new_v4(),
+                "notifications",
+                notifications_value,
+                Some("Notification preferences and settings")
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            sqlx::query!(
+                "INSERT INTO admin_settings (id, setting_key, setting_value, description, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())",
+                uuid::Uuid::new_v4(),
+                "security",
+                security_value,
+                Some("Security and access control settings")
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            tx.commit().await?;
+
+            tracing::info!("✅ Default admin settings initialized");
+        } else {
+            tracing::info!("📊 Admin settings already exist, skipping initialization");
+        }
+
+        Ok(())
+    }
+
     pub async fn get_setting(&self, key: &str) -> Result<Option<AdminSettingsRecord>> {
         let record = sqlx::query_as!(
             AdminSettingsRecord,

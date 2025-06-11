@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO admin_settings (id, setting_key, setting_value, description, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW())",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Jsonb",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "142c855d4f9b7c5b586716eb60c72124d24884f10d4769360a9d819d63745712"
+}

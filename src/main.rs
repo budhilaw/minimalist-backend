@@ -13,7 +13,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use portfolio_backend::{
     database::{
         connection::{create_pool, run_migrations},
-        seeder::DatabaseSeeder,
+        // seeder::DatabaseSeeder, // Removed unused import - seeding disabled to prevent data loss
     },
     handlers::{admin_settings, audit_log, auth, comment, portfolio, post, service},
     middleware::{
@@ -64,12 +64,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run database migrations
     run_migrations(&pool).await?;
 
+    // DISABLED: Automatic seeding to prevent data loss
+    //
+    // WARNING: The automatic seeding was causing data loss on every restart
+    // because it drops all tables and re-seeds with sample data.
+    //
+    // To manually seed the database when needed, use:
+    // let seeder = DatabaseSeeder::new(pool.clone());
+    // seeder.seed_all().await?;
+    //
     // Seed database in development
-    if config.is_development() {
-        let seeder = DatabaseSeeder::new(pool.clone());
-        seeder.seed_all().await?;
-        info!("Database seeded successfully");
-    }
+    // if config.is_development() {
+    //     let seeder = DatabaseSeeder::new(pool.clone());
+    //     seeder.seed_all().await?;
+    //     info!("Database seeded successfully");
+    // }
 
     // Initialize repositories
     let user_repository = Arc::new(UserRepository::new(pool.clone()));
@@ -79,6 +88,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let comment_repository = Arc::new(CommentRepository::new(pool.clone()));
     let audit_log_repository = Arc::new(AuditLogRepository::new(pool.clone()));
     let admin_settings_repository = Arc::new(AdminSettingsRepository::new(pool.clone()));
+
+    // Safely initialize admin settings if they don't exist (won't overwrite existing data)
+    admin_settings_repository.ensure_settings_exist().await?;
 
     // Initialize services
     let auth_service = AuthService::new(
