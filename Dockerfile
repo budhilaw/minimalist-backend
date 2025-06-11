@@ -50,8 +50,8 @@ WORKDIR /app
 # Copy the binary from builder stage
 COPY --from=builder /app/target/release/portfolio-backend ./app
 
-# Copy configuration files
-COPY .config.yaml ./
+# Copy configuration files (if they exist)
+COPY example.config.yaml ./.config.yaml
 
 # Change ownership
 RUN chown -R app:app /app
