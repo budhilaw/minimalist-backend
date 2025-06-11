@@ -42,7 +42,7 @@ services:
 
   # Backend API
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY:budhilaw/minimalist-backend}/minimalist-backend:latest
+    image: ghcr.io/budhilaw/minimalist-backend:latest
     container_name: portfolio-backend
     restart: unless-stopped
     environment:

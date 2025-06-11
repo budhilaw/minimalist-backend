@@ -21,9 +21,13 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/minimalist-backend
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
