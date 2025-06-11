@@ -181,17 +181,21 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup SSH
+    - name: Setup SSH key
+      env:
+        SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+        echo "$SSH_KEY" > ~/.ssh/deploy_key
         chmod 600 ~/.ssh/deploy_key
         
+    - name: Setup SSH connection
+      run: |
         # Debug key format
         echo "SSH key file info:"
         file ~/.ssh/deploy_key
-        head -1 ~/.ssh/deploy_key
-        tail -1 ~/.ssh/deploy_key
+        head -1 ~/.ssh/deploy_key | cut -c1-20
+        tail -1 ~/.ssh/deploy_key | cut -c1-20
         
         # Test connectivity first
         echo "Testing connectivity to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_SSH_PORT }}"
