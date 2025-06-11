@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE admin_settings SET setting_value = $1, updated_by = $2, updated_at = NOW() WHERE setting_key = 'notifications'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Jsonb",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "baec30730b7ee978167c850e46418710c8bdcc20c656bc9c1128cb40dbfdb856"
+}

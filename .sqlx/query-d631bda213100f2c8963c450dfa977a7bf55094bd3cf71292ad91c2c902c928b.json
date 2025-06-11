@@ -1,0 +1,107 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, user_id, user_name, action, resource_type, resource_id, \n                   resource_title, details, old_values, new_values, \n                   ip_address, user_agent, success, error_message, created_at\n            FROM audit_logs \n            WHERE user_id = $1 \n            ORDER BY created_at DESC \n            LIMIT $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "action",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "resource_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "resource_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "resource_title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "details",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "old_values",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 9,
+        "name": "new_values",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 10,
+        "name": "ip_address",
+        "type_info": "Inet"
+      },
+      {
+        "ordinal": 11,
+        "name": "user_agent",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "success",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "error_message",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "d631bda213100f2c8963c450dfa977a7bf55094bd3cf71292ad91c2c902c928b"
+}

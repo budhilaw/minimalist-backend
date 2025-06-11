@@ -71,6 +71,3 @@ docs/build/
 
 # Cache
 .cache/
-
-# sql
-.sqlx

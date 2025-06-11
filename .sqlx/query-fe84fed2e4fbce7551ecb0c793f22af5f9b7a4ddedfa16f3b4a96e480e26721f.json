@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE admin_settings \n            SET setting_value = $1, updated_by = $2, updated_at = NOW()\n            WHERE setting_key = $3\n            RETURNING id, setting_key, setting_value, description, updated_by, updated_at, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "setting_key",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "setting_value",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Jsonb",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "fe84fed2e4fbce7551ecb0c793f22af5f9b7a4ddedfa16f3b4a96e480e26721f"
+}

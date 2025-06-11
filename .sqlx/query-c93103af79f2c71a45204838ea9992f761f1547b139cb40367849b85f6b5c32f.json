@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM audit_logs WHERE created_at < NOW() - INTERVAL '1 day' * $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c93103af79f2c71a45204838ea9992f761f1547b139cb40367849b85f6b5c32f"
+}
