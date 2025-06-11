@@ -30,7 +30,7 @@ pub fn generate_slug(title: &str) -> String {
         .map(|c| {
             if c.is_alphanumeric() {
                 c
-            } else if c.is_whitespace() || c == '_' {
+            } else if c.is_whitespace() || c == '_' || c == '-' {
                 '-'
             } else {
                 '\0' // Will be filtered out
