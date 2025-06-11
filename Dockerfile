@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.75-slim as builder
+FROM rust:1.75-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -15,8 +15,9 @@ WORKDIR /app
 ARG SQLX_OFFLINE=true
 ENV SQLX_OFFLINE=$SQLX_OFFLINE
 
-# Copy manifests
-COPY Cargo.toml Cargo.lock ./
+# Copy manifests first
+COPY Cargo.toml ./
+COPY Cargo.lock ./
 
 # Create a dummy main.rs to build dependencies
 RUN mkdir src && echo "fn main() {}" > src/main.rs
@@ -39,6 +40,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
     libpq5 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user
@@ -50,8 +52,9 @@ WORKDIR /app
 # Copy the binary from builder stage
 COPY --from=builder /app/target/release/portfolio-backend ./app
 
-# Copy configuration files (if they exist)
+# Copy configuration files (gracefully handle missing files)
 COPY example.config.yaml ./.config.yaml
+COPY example.secret.yaml ./.secret.yaml
 
 # Change ownership
 RUN chown -R app:app /app
