@@ -181,76 +181,41 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup SSH key
+    - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
-        
-        # Write SSH key with proper formatting
         echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
-        
-        # Remove any carriage returns and ensure proper line endings
-        sed -i 's/\r$//' ~/.ssh/deploy_key
-        
-        # Set proper permissions
         chmod 600 ~/.ssh/deploy_key
         
-        # Validate SSH key format
-        if ! head -1 ~/.ssh/deploy_key | grep -q "BEGIN.*PRIVATE KEY"; then
-          echo "Error: SSH key doesn't appear to be in correct format"
-          echo "Expected format: -----BEGIN [TYPE] PRIVATE KEY-----"
-          echo "Actual first line: $(head -1 ~/.ssh/deploy_key)"
-          echo "Total lines: $(wc -l < ~/.ssh/deploy_key)"
-          exit 1
-        fi
+        # Debug key format
+        echo "SSH key file info:"
+        file ~/.ssh/deploy_key
+        head -1 ~/.ssh/deploy_key
+        tail -1 ~/.ssh/deploy_key
         
-        if ! tail -1 ~/.ssh/deploy_key | grep -q "END.*PRIVATE KEY"; then
-          echo "Error: SSH key doesn't have proper ending"
-          echo "Expected format: -----END [TYPE] PRIVATE KEY-----"
-          echo "Actual last line: $(tail -1 ~/.ssh/deploy_key)"
-          exit 1
-        fi
-        
-        echo "SSH key validation successful"
-        echo "Key type: $(head -1 ~/.ssh/deploy_key)"
-        echo "Key lines: $(wc -l < ~/.ssh/deploy_key)"
-        
-        # Test SSH key (optional - replace with your server)
-        # ssh-keyscan -H your-server.com >> ~/.ssh/known_hosts
-        # ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no user@your-server.com "echo 'SSH connection successful'"
-
-    - name: Setup SSH connection
-      run: |
         # Test connectivity first
         echo "Testing connectivity to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_SSH_PORT }}"
-        timeout 10 nc -zv ${{ secrets.VPS_HOST }} ${{ secrets.VPS_SSH_PORT }} || echo "Port check failed"
+        nc -zv ${{ secrets.VPS_HOST }} ${{ secrets.VPS_SSH_PORT }} || echo "Port check failed"
         
         # Add host key (try with custom port)
-        ssh-keyscan -H -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || echo "Host key scan failed, proceeding anyway"
-        
-        # Test SSH connection
-        echo "Testing SSH connection..."
-        ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_SSH_PORT }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo 'SSH connection successful'"
+        ssh-keyscan -H -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts || echo "Host key scan failed, proceeding anyway"
 
     - name: Create deployment package
       run: |
         # Create deployment directory
         mkdir -p deployment
         
-        # Copy necessary files (with error handling)
+        # Copy necessary files
         cp Dockerfile deployment/
         cp docker-compose.prod.yml deployment/
         cp Cargo.toml deployment/
-        cp Cargo.lock deployment/ 2>/dev/null || echo "Warning: Cargo.lock not found, will be generated during build"
+        cp Cargo.lock deployment/ 2>/dev/null || echo "Warning: Cargo.lock not found"
         cp -r src deployment/
         cp -r migrations deployment/ 2>/dev/null || echo "Warning: migrations directory not found"
         cp example.*.yaml deployment/ 2>/dev/null || echo "Warning: example config files not found"
         cp .config.yaml deployment/ 2>/dev/null || echo "Warning: .config.yaml not found"
-        cp Makefile deployment/ 2>/dev/null || echo "Warning: Makefile not found"
+        cp Makefile deployment/ 2>/dev/null || echo "Warning: Makefile not found"  
         cp -r .sqlx deployment/ 2>/dev/null || echo "Warning: .sqlx cache not found"
-        
-        # List what we're including
-        echo "Deployment package contents:"
-        ls -la deployment/
         
         # Create archive
         tar -czf deployment.tar.gz -C deployment .
@@ -291,20 +256,9 @@ jobs:
           # Stop and remove old containers
           docker compose -f docker-compose.prod.yml down || true
           
-          # Pull latest images
-          docker compose -f docker-compose.prod.yml pull api
-          
-          # Start new containers
+          # Pull latest images and start new containers
+          docker compose -f docker-compose.prod.yml pull
           docker compose -f docker-compose.prod.yml up -d
-          
-          # Wait for services to be healthy
-          sleep 30
-          
-          # Verify deployment
-          docker compose -f docker-compose.prod.yml ps api | grep -q "healthy" || exit 1
-          
-          # Clean up old images
-          docker image prune -f
           
           # Cleanup
           rm -f /tmp/deployment.tar.gz
@@ -322,10 +276,10 @@ jobs:
 
   notify:
     name: Notify Deployment Status
-    runs-on: ubuntu-latest
     needs: [build, build-and-push, deploy]
+    runs-on: ubuntu-latest
     if: always() && github.ref == 'refs/heads/main'
-    
+
     steps:
     - name: Notify Success
       if: needs.deploy.result == 'success'
@@ -333,10 +287,10 @@ jobs:
         echo "✅ Backend deployment successful!"
         # Add webhook notification here if needed
         # curl -X POST ${{ secrets.DISCORD_WEBHOOK }} -d '{"content":"✅ Backend deployed successfully!"}'
-        
+
     - name: Notify Failure
-      if: needs.deploy.result == 'failure' || needs.build.result == 'failure' || needs.build-and-push.result == 'failure'
+      if: needs.deploy.result == 'failure'
       run: |
-        echo "❌ Deployment failed!"
+        echo "❌ Backend deployment failed!"
         # Add webhook notification here if needed
         # curl -X POST ${{ secrets.DISCORD_WEBHOOK }} -d '{"content":"❌ Backend deployment failed!"}' 
