@@ -186,40 +186,56 @@ jobs:
         SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
-        echo "$SSH_KEY" > ~/.ssh/deploy_key
+        # Write SSH key ensuring proper newlines and format
+        echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
         chmod 600 ~/.ssh/deploy_key
+        
+        # Ensure the key has proper format
+        if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/deploy_key; then
+          echo "Error: SSH key doesn't appear to be in correct format"
+          echo "Key should start with -----BEGIN [TYPE] PRIVATE KEY-----"
+          exit 1
+        fi
+        
+        # Debug key format (safely)
+        echo "SSH key file info:"
+        file ~/.ssh/deploy_key
+        echo "Key type: $(head -1 ~/.ssh/deploy_key)"
+        echo "Key lines: $(wc -l < ~/.ssh/deploy_key)"
         
     - name: Setup SSH connection
       run: |
-        # Debug key format
-        echo "SSH key file info:"
-        file ~/.ssh/deploy_key
-        head -1 ~/.ssh/deploy_key | cut -c1-20
-        tail -1 ~/.ssh/deploy_key | cut -c1-20
-        
         # Test connectivity first
         echo "Testing connectivity to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_SSH_PORT }}"
-        nc -zv ${{ secrets.VPS_HOST }} ${{ secrets.VPS_SSH_PORT }} || echo "Port check failed"
+        timeout 10 nc -zv ${{ secrets.VPS_HOST }} ${{ secrets.VPS_SSH_PORT }} || echo "Port check failed"
         
         # Add host key (try with custom port)
-        ssh-keyscan -H -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts || echo "Host key scan failed, proceeding anyway"
+        ssh-keyscan -H -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || echo "Host key scan failed, proceeding anyway"
+        
+        # Test SSH connection
+        echo "Testing SSH connection..."
+        ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_SSH_PORT }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo 'SSH connection successful'"
 
     - name: Create deployment package
       run: |
         # Create deployment directory
         mkdir -p deployment
         
-        # Copy necessary files
+        # Copy necessary files (with error handling)
         cp Dockerfile deployment/
         cp docker-compose.prod.yml deployment/
         cp Cargo.toml deployment/
-        cp Cargo.lock deployment/
+        cp Cargo.lock deployment/ 2>/dev/null || echo "Warning: Cargo.lock not found, will be generated during build"
         cp -r src deployment/
-        cp -r migrations deployment/ 2>/dev/null || true
-        cp example.*.yaml deployment/ 2>/dev/null || true
-        cp .config.yaml deployment/ 2>/dev/null || true
-        cp Makefile deployment/ 2>/dev/null || true
-        cp -r .sqlx deployment/ 2>/dev/null || true
+        cp -r migrations deployment/ 2>/dev/null || echo "Warning: migrations directory not found"
+        cp example.*.yaml deployment/ 2>/dev/null || echo "Warning: example config files not found"
+        cp .config.yaml deployment/ 2>/dev/null || echo "Warning: .config.yaml not found"
+        cp Makefile deployment/ 2>/dev/null || echo "Warning: Makefile not found"
+        cp -r .sqlx deployment/ 2>/dev/null || echo "Warning: .sqlx cache not found"
+        
+        # List what we're including
+        echo "Deployment package contents:"
+        ls -la deployment/
         
         # Create archive
         tar -czf deployment.tar.gz -C deployment .
