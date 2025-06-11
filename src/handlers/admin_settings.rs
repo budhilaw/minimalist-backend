@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State},
     response::Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::Arc;
 use tracing::info;
@@ -13,12 +13,37 @@ use crate::{
     middleware::rate_limiter::{BlockedIpInfo, RedisRateLimiter},
     models::admin_settings::{
         FeatureSettings, GeneralSettings, NotificationSettings, SecuritySettings,
-        UpdateSettingsRequest,
+        UpdateSettingsRequest, SocialMediaLinks,
     },
     services::admin_settings_service::AdminSettingsServiceTrait,
     services::auth_service::Claims,
     utils::errors::AppError,
 };
+
+// Public response structures (different from internal models for security)
+#[derive(Debug, Serialize)]
+pub struct PublicSiteSettings {
+    pub site_name: String,
+    pub site_description: String,
+    pub maintenance_mode: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maintenance_message: Option<String>,
+    pub social_media_links: SocialMediaLinks,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PublicFeatureSettings {
+    pub portfolio_enabled: bool,
+    pub services_enabled: bool,
+    pub blog_enabled: bool,
+    pub contact_form_enabled: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PublicSettingsResponse {
+    pub site: PublicSiteSettings,
+    pub features: PublicFeatureSettings,
+}
 
 #[derive(Clone)]
 pub struct AdminSettingsState {
@@ -444,4 +469,37 @@ pub async fn get_security_stats(
     } else {
         Err(AppError::Internal("Rate limiter not available".to_string()))
     }
+}
+
+// GET /api/v1/settings/public - Public endpoint for safe settings (no auth required)
+pub async fn get_public_settings(
+    State(state): State<AdminSettingsState>,
+) -> Result<Json<PublicSettingsResponse>, AppError> {
+    info!("get_public_settings: Fetching public settings");
+
+    let settings = state.admin_settings_service.get_all_settings().await?;
+
+    // Only expose safe, non-sensitive settings
+    let public_response = PublicSettingsResponse {
+        site: PublicSiteSettings {
+            site_name: settings.general.site_name,
+            site_description: settings.general.site_description,
+            maintenance_mode: settings.general.maintenance_mode,
+            maintenance_message: if settings.general.maintenance_mode {
+                Some(settings.general.maintenance_message)
+            } else {
+                None
+            },
+            social_media_links: settings.general.social_media_links,
+        },
+        features: PublicFeatureSettings {
+            portfolio_enabled: settings.features.portfolio_enabled,
+            services_enabled: settings.features.services_enabled,
+            blog_enabled: settings.features.blog_enabled,
+            contact_form_enabled: settings.features.contact_form_enabled,
+        },
+    };
+
+    info!("get_public_settings: Successfully fetched public settings");
+    Ok(Json(public_response))
 }

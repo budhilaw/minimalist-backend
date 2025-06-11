@@ -339,11 +339,16 @@ fn create_app(
             "/maintenance-mode",
             put(admin_settings::get_maintenance_mode),
         )
-        .with_state(admin_settings_state)
+        .with_state(admin_settings_state.clone())
         .route_layer(middleware::from_fn_with_state(
             auth_state.auth_service.clone(),
             auth_middleware,
         ));
+
+    // Public settings routes (no authentication required)
+    let settings_public_routes = Router::new()
+        .route("/public", get(admin_settings::get_public_settings))
+        .with_state(admin_settings_state);
 
     Router::new()
         .nest("/api/v1/auth", protected_routes)
@@ -358,6 +363,7 @@ fn create_app(
         .nest("/api/v1/comments", comment_public_routes)
         .nest("/api/v1/admin/audit-logs", audit_log_routes)
         .nest("/api/v1/admin/settings", admin_settings_routes)
+        .nest("/api/v1/settings", settings_public_routes)
         .route("/api/v1/health", get(health_check))
         .layer(
             ServiceBuilder::new()

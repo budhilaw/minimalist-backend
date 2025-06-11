@@ -35,6 +35,7 @@ pub struct GeneralSettings {
     pub maintenance_mode: bool,
     #[serde(rename = "maintenanceMessage")]
     pub maintenance_message: String,
+    pub social_media_links: SocialMediaLinks,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,15 +94,26 @@ pub struct UpdateSettingRequest {
     pub setting_value: serde_json::Value,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SocialMediaLinks {
+    pub github: Option<String>,
+    pub linkedin: Option<String>,
+    pub x: Option<String>,
+    pub facebook: Option<String>,
+    pub instagram: Option<String>,
+    pub email: Option<String>,
+}
+
 impl Default for GeneralSettings {
     fn default() -> Self {
         Self {
-            site_name: "John Doe Portfolio".to_string(),
+            site_name: "Ericsson Budhilaw".to_string(),
             site_description: "Senior Software Engineer specializing in consulting and freelancing"
                 .to_string(),
             maintenance_mode: false,
             maintenance_message:
                 "The site is currently under maintenance. Please check back later.".to_string(),
+            social_media_links: SocialMediaLinks::default(),
         }
     }
 }
@@ -138,6 +150,19 @@ impl Default for SecuritySettings {
             max_login_attempts: 5,
             two_factor_enabled: false,
             ip_whitelist: vec![],
+        }
+    }
+}
+
+impl Default for SocialMediaLinks {
+    fn default() -> Self {
+        Self {
+            github: Some("https://github.com/budhilaw".to_string()),
+            linkedin: Some("https://linkedin.com/in/ericssonbudhilaw".to_string()),
+            x: Some("https://x.com/ericssonbudhi".to_string()),
+            facebook: Some("https://facebook.com/budhilaw".to_string()),
+            instagram: Some("https://instagram.com/budhilaw".to_string()),
+            email: Some("ericsson@budhilaw.com".to_string()),
         }
     }
 }
