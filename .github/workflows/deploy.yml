@@ -247,6 +247,25 @@ jobs:
           cd "$APP_DIR"
           tar -xzf /tmp/deployment.tar.gz
           
+          # Set environment variables
+          export POSTGRES_DB="${{ secrets.POSTGRES_DB }}"
+          export POSTGRES_USER="${{ secrets.POSTGRES_USER }}"
+          export POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+          export REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}"
+          export RUST_LOG="info"
+          export NODE_ENV="production"
+          export COMPOSE_PROJECT_NAME="portfolio-backend"
+          
+          # Create .env file for reference
+          echo "# Production Environment Variables" > .env
+          echo "POSTGRES_DB=$POSTGRES_DB" >> .env
+          echo "POSTGRES_USER=$POSTGRES_USER" >> .env
+          echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
+          echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> .env
+          echo "RUST_LOG=$RUST_LOG" >> .env
+          echo "NODE_ENV=$NODE_ENV" >> .env
+          echo "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME" >> .env
+          
           # Create external network if not exists
           docker network create portfolio-network || true
           
