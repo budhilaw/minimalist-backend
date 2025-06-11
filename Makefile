@@ -130,6 +130,10 @@ migrate-revert: ## ⏪ Revert last migration
 	@echo "$(CYAN)⏪ Reverting last migration...$(RESET)"
 	@sqlx migrate revert
 
+sqlx-prepare: ## 🔧 Generate SQLx query cache for offline compilation
+	@echo "$(CYAN)🔧 Generating SQLx query cache...$(RESET)"
+	@cargo sqlx prepare
+
 seed: ## 🌱 Seed database with dummy data
 	@echo "$(CYAN)🌱 Seeding database with dummy data...$(RESET)"
 	@cargo run --release seed

@@ -11,6 +11,10 @@ RUN apt-get update && apt-get install -y \
 # Create app directory
 WORKDIR /app
 
+# Set SQLx to offline mode for builds
+ARG SQLX_OFFLINE=true
+ENV SQLX_OFFLINE=$SQLX_OFFLINE
+
 # Copy manifests
 COPY Cargo.toml Cargo.lock ./
 
@@ -20,8 +24,9 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs
 # Build dependencies (this will be cached)
 RUN cargo build --release && rm -rf src
 
-# Copy source code
+# Copy source code and SQLx cache
 COPY src ./src
+COPY .sqlx ./.sqlx
 
 # Build the application
 RUN cargo build --release

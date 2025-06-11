@@ -64,11 +64,29 @@ jobs:
 
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
+      env:
+        SQLX_OFFLINE: true
 
+    - name: Set up PostgreSQL for tests
+      run: |
+        sudo systemctl start postgresql.service
+        sudo -u postgres createdb test_db
+        
+    - name: Install SQLx CLI
+      run: cargo install sqlx-cli --no-default-features --features postgres
+      
+    - name: Run migrations and generate SQLx cache
+      run: |
+        cargo sqlx migrate run
+        cargo sqlx prepare
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        
     - name: Run tests
       run: cargo test --verbose
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        SQLX_OFFLINE: true
 
   build-and-push:
     name: Build and Push Docker Image
@@ -110,6 +128,8 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        build-args: |
+          SQLX_OFFLINE=true
 
   deploy:
     name: Deploy to VPS
@@ -155,6 +175,7 @@ jobs:
         cp example.*.yaml deployment/ 2>/dev/null || true
         cp .config.yaml deployment/ 2>/dev/null || true
         cp Makefile deployment/ 2>/dev/null || true
+        cp -r .sqlx deployment/ 2>/dev/null || true
         
         # Create archive
         tar -czf deployment.tar.gz -C deployment .
