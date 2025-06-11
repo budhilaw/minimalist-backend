@@ -12,8 +12,8 @@ use validator::Validate;
 use crate::{
     middleware::rate_limiter::{BlockedIpInfo, RedisRateLimiter},
     models::admin_settings::{
-        FeatureSettings, GeneralSettings, NotificationSettings, SecuritySettings,
-        UpdateSettingsRequest, SocialMediaLinks,
+        FeatureSettings, GeneralSettings, NotificationSettings, SecuritySettings, SocialMediaLinks,
+        UpdateSettingsRequest,
     },
     services::admin_settings_service::AdminSettingsServiceTrait,
     services::auth_service::Claims,

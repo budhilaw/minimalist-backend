@@ -158,10 +158,10 @@ impl Default for SocialMediaLinks {
     fn default() -> Self {
         Self {
             github: Some("https://github.com/budhilaw".to_string()),
-            linkedin: Some("https://linkedin.com/in/ericssonbudhilaw".to_string()),
-            x: Some("https://x.com/ericssonbudhi".to_string()),
-            facebook: Some("https://facebook.com/budhilaw".to_string()),
-            instagram: Some("https://instagram.com/budhilaw".to_string()),
+            linkedin: Some("https://linkedin.com/in/budhilaw".to_string()),
+            x: Some("https://x.com/ceritaeric".to_string()),
+            facebook: Some("https://facebook.com/ebudhilaw".to_string()),
+            instagram: Some("https://instagram.com/ceritaeric".to_string()),
             email: Some("ericsson@budhilaw.com".to_string()),
         }
     }
