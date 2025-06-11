@@ -25,8 +25,9 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs
 # Build dependencies (this will be cached)
 RUN cargo build --release && rm -rf src
 
-# Copy source code and SQLx cache
+# Copy source code, migrations, and SQLx cache
 COPY src ./src
+COPY migrations ./migrations
 COPY .sqlx ./.sqlx
 
 # Build the application
