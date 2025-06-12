@@ -1,6 +1,6 @@
 use axum::{
     extract::{ConnectInfo, State},
-    http::HeaderMap,
+    http::{header::SET_COOKIE, HeaderMap},
     response::Json,
 };
 use serde_json::json;
@@ -28,7 +28,7 @@ pub async fn login(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(request): Json<LoginRequest>,
-) -> Result<Json<serde_json::Value>, AppError> {
+) -> Result<axum::response::Response, AppError> {
     let username = request.username.clone();
     let client_ip = get_client_ip(&headers, Some(&addr));
     let user_agent = get_user_agent(&headers);
@@ -105,10 +105,37 @@ pub async fn login(
                 eprintln!("Failed to log successful login: {}", e);
             }
 
-            Ok(Json(json!({
+            // Create secure httpOnly cookie for the token
+            let cookie_value = format!(
+                "admin_token={}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age={}",
+                response.token,
+                24 * 60 * 60 // 24 hours in seconds
+            );
+
+            // Build response with cookie
+            let json_response = Json(json!({
                 "success": true,
-                "data": response
-            })))
+                "data": {
+                    "user": response.user,
+                    "expires_at": response.expires_at,
+                    // Don't send token in response body for security
+                }
+            }));
+
+            let mut response = axum::response::Response::new(
+                serde_json::to_string(&json_response.0).unwrap().into(),
+            );
+
+            response.headers_mut().insert(
+                axum::http::header::CONTENT_TYPE,
+                "application/json".parse().unwrap(),
+            );
+
+            response
+                .headers_mut()
+                .insert(SET_COOKIE, cookie_value.parse().unwrap());
+
+            Ok(response)
         }
         Err(e) => {
             // Record failed attempt and check for auto-blocking
@@ -149,7 +176,7 @@ pub async fn login(
 pub async fn logout(
     State(state): State<AuthState>,
     claims: Claims,
-) -> Result<Json<serde_json::Value>, AppError> {
+) -> Result<axum::response::Response, AppError> {
     // Log logout
     if let Err(e) = state
         .audit_log_service
@@ -168,10 +195,27 @@ pub async fn logout(
         eprintln!("Failed to log logout: {}", e);
     }
 
-    Ok(Json(json!({
+    // Clear the cookie by setting it to expire
+    let clear_cookie = "admin_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0";
+
+    let json_response = Json(json!({
         "success": true,
         "message": "Successfully logged out"
-    })))
+    }));
+
+    let mut response =
+        axum::response::Response::new(serde_json::to_string(&json_response.0).unwrap().into());
+
+    response.headers_mut().insert(
+        axum::http::header::CONTENT_TYPE,
+        "application/json".parse().unwrap(),
+    );
+
+    response
+        .headers_mut()
+        .insert(SET_COOKIE, clear_cookie.parse().unwrap());
+
+    Ok(response)
 }
 
 // Helper function to extract client IP
