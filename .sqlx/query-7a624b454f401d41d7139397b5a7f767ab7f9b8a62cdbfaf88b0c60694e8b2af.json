@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO user_notification_reads (user_id, audit_log_id)\n                VALUES ($1, $2)\n                ON CONFLICT (user_id, audit_log_id) DO UPDATE SET\n                    read_at = NOW()\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7a624b454f401d41d7139397b5a7f767ab7f9b8a62cdbfaf88b0c60694e8b2af"
+}

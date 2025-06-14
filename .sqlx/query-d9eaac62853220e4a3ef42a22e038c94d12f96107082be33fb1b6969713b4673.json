@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM user_notification_reads\n            WHERE read_at < NOW() - INTERVAL '30 days'\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "d9eaac62853220e4a3ef42a22e038c94d12f96107082be33fb1b6969713b4673"
+}

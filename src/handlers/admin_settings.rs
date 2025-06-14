@@ -39,6 +39,7 @@ pub struct PublicFeatureSettings {
     pub services_enabled: bool,
     pub blog_enabled: bool,
     pub contact_form_enabled: bool,
+    pub comments_enabled: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -501,6 +502,7 @@ pub async fn get_public_settings(
             services_enabled: settings.features.services_enabled,
             blog_enabled: settings.features.blog_enabled,
             contact_form_enabled: settings.features.contact_form_enabled,
+            comments_enabled: settings.features.comments_enabled,
         },
     };
 

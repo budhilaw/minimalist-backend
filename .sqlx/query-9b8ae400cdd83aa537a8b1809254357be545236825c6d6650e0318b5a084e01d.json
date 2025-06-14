@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO user_notification_preferences (user_id, notification_type, enabled, delivery_method)\n                VALUES ($1, $2, true, 'in_app')\n                ON CONFLICT (user_id, notification_type) DO NOTHING\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9b8ae400cdd83aa537a8b1809254357be545236825c6d6650e0318b5a084e01d"
+}

@@ -9,6 +9,7 @@ use crate::{
         CreateCommentRequest, UpdateCommentStatusRequest,
     },
     repositories::comment_repository::CommentRepositoryTrait,
+    services::admin_settings_service::AdminSettingsServiceTrait,
 };
 
 #[async_trait::async_trait]
@@ -43,11 +44,34 @@ pub trait CommentServiceTrait: Send + Sync {
 #[derive(Clone)]
 pub struct CommentService {
     repository: Arc<dyn CommentRepositoryTrait>,
+    admin_settings_service: Arc<dyn AdminSettingsServiceTrait>,
 }
 
 impl CommentService {
-    pub fn new(repository: Arc<dyn CommentRepositoryTrait>) -> Self {
-        Self { repository }
+    pub fn new(
+        repository: Arc<dyn CommentRepositoryTrait>,
+        admin_settings_service: Arc<dyn AdminSettingsServiceTrait>,
+    ) -> Self {
+        Self { 
+            repository,
+            admin_settings_service,
+        }
+    }
+
+    // Check if comments are enabled in admin settings
+    async fn check_comments_enabled(&self) -> Result<()> {
+        let comments_enabled = self.admin_settings_service
+            .is_feature_enabled("comments")
+            .await
+            .unwrap_or(true); // Default to enabled if check fails
+
+        if !comments_enabled {
+            return Err(AppError::Validation(
+                "Comments are currently disabled".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 }
 
@@ -74,6 +98,9 @@ impl CommentServiceTrait for CommentService {
         ip_address: Option<String>,
         user_agent: Option<String>,
     ) -> Result<Comment> {
+        // Check if comments are enabled
+        self.check_comments_enabled().await?;
+
         // Business logic: Validate comment content
         self.validate_comment_content(
             &request.content,
@@ -99,9 +126,9 @@ impl CommentServiceTrait for CommentService {
         }
 
         // Business logic: Auto-moderate based on content and email
-        let requires_moderation = self.requires_moderation(&request.content, &request.author_email);
+        let requires_moderation = self.requires_moderation(&request.content, &request.author_email).await?;
 
-        // Determine initial status
+        // Determine initial status based on admin settings and content analysis
         let initial_status = if requires_moderation {
             "pending"
         } else {
@@ -153,6 +180,9 @@ impl CommentServiceTrait for CommentService {
         post_id: Uuid,
         include_replies: bool,
     ) -> Result<Vec<Comment>> {
+        // Check if comments are enabled for public viewing
+        self.check_comments_enabled().await?;
+
         // Business logic: Only return approved comments for public viewing
         let mut comments = self
             .repository
@@ -166,6 +196,9 @@ impl CommentServiceTrait for CommentService {
     }
 
     async fn get_comment_replies(&self, parent_id: Uuid) -> Result<Vec<Comment>> {
+        // Check if comments are enabled
+        self.check_comments_enabled().await?;
+
         // Business logic: Ensure parent comment exists
         if self.repository.find_by_id(parent_id).await?.is_none() {
             return Err(AppError::NotFound("Parent comment not found".to_string()));
@@ -271,69 +304,33 @@ impl CommentService {
     }
 
     fn is_spam_content(&self, content: &str) -> bool {
-        let spam_keywords = [
-            "viagra",
-            "casino",
-            "lottery",
-            "winner",
-            "congratulations",
-            "click here",
-            "free money",
-            "make money fast",
-            "work from home",
-            "bitcoin investment",
-            "crypto trading",
-            "earn $",
-            "guaranteed profit",
-            "no risk",
-            "limited time",
-            "act now",
-            "special offer",
-            "discount",
-            "buy now",
-            "credit repair",
-        ];
-
         let content_lower = content.to_lowercase();
 
-        // Check for spam keywords
-        let keyword_matches = spam_keywords
-            .iter()
-            .filter(|&keyword| content_lower.contains(keyword))
-            .count();
+        // Common spam indicators
+        let spam_keywords = [
+            "viagra", "casino", "lottery", "winner", "congratulations",
+            "click here", "free money", "make money fast", "work from home",
+            "buy now", "limited time", "act now", "urgent", "guaranteed",
+            "no risk", "100% free", "amazing deal", "incredible offer",
+        ];
 
-        // If multiple spam keywords found, definitely spam
-        if keyword_matches >= 2 {
-            return true;
+        for keyword in &spam_keywords {
+            if content_lower.contains(keyword) {
+                return true;
+            }
         }
 
         // Check for excessive links
-        let link_count = content_lower.matches("http").count();
+        let link_count = content.matches("http").count();
         if link_count > 2 {
             return true;
         }
 
-        // Check for excessive capital letters
+        // Check for excessive capitalization
         let caps_count = content.chars().filter(|c| c.is_uppercase()).count();
         let total_letters = content.chars().filter(|c| c.is_alphabetic()).count();
-
         if total_letters > 0 && caps_count as f32 / total_letters as f32 > 0.5 {
             return true;
-        }
-
-        // Check for repeated characters (potential spam)
-        let mut consecutive_count = 1;
-        let mut prev_char = '\0';
-        for ch in content.chars() {
-            if ch == prev_char {
-                consecutive_count += 1;
-                if consecutive_count > 4 {
-                    return true;
-                }
-            } else {
-                consecutive_count = 1;
-            }
-            prev_char = ch;
         }
 
         // Check for excessive punctuation
@@ -345,7 +342,13 @@ impl CommentService {
         false
     }
 
-    fn requires_moderation(&self, content: &str, email: &str) -> bool {
+    async fn requires_moderation(&self, content: &str, email: &str) -> Result<bool> {
+        // Check admin setting first - if comment approval is required, all comments need moderation
+        let settings = self.admin_settings_service.get_all_settings().await.unwrap_or_default();
+        if settings.security.comment_approval_required {
+            return Ok(true);
+        }
+
         // Auto-approve comments from known good email domains (for trusted organizations)
         let trusted_domains = ["@gmail.com", "@outlook.com", "@yahoo.com", "@hotmail.com"];
         let is_trusted_domain = trusted_domains
@@ -369,44 +372,54 @@ impl CommentService {
 
         for keyword in &moderation_keywords {
             if content_lower.contains(keyword) {
-                return true;
+                return Ok(true);
             }
         }
 
         // Very long comments require moderation
         if content.len() > 2000 {
-            return true;
+            return Ok(true);
         }
 
         // Short comments from trusted domains can be auto-approved
         if is_trusted_domain && content.len() > 10 && content.len() < 500 {
-            return false;
+            return Ok(false);
         }
 
         // First-time commenters from non-trusted domains require moderation
-        true
+        Ok(true)
     }
 
     async fn check_rate_limit(&self, ip_address: &str) -> Result<bool> {
-        // Enhanced rate limiting: check comments from this IP in the last hour
+        // Get rate limiting settings from admin settings
+        let settings = self.admin_settings_service.get_all_settings().await.unwrap_or_default();
+        let rate_limit_settings = &settings.security.comment_rate_limit;
+
+        // If rate limiting is disabled, allow all comments
+        if !rate_limit_settings.enabled {
+            return Ok(false);
+        }
+
+        // Check comments from this IP in the last hour
         let recent_comments_count = self
             .repository
             .count_recent_comments_by_ip(ip_address, 3600)
             .await?;
 
-        // Allow max 3 comments per hour from same IP
-        if recent_comments_count >= 3 {
+        // Check against configured hourly limit
+        if recent_comments_count >= rate_limit_settings.max_comments_per_hour as i64 {
             return Ok(true);
         }
 
-        // Check comments from this IP in the last 5 minutes for rapid spam
+        // Check comments from this IP in the configured minute window
+        let minute_window_seconds = rate_limit_settings.minute_window * 60;
         let very_recent_comments = self
             .repository
-            .count_recent_comments_by_ip(ip_address, 300)
+            .count_recent_comments_by_ip(ip_address, minute_window_seconds as i64)
             .await?;
 
-        // Allow max 1 comment per 5 minutes from same IP
-        if very_recent_comments >= 1 {
+        // Check against configured minute limit
+        if very_recent_comments >= rate_limit_settings.max_comments_per_minute as i64 {
             return Ok(true);
         }
 

@@ -332,7 +332,7 @@ pub async fn change_password(
     State(state): State<AuthState>,
     claims: Claims,
     Json(request): Json<ChangePasswordRequest>,
-) -> Result<Json<serde_json::Value>, AppError> {
+) -> Result<axum::response::Response, AppError> {
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AppError::Internal("Invalid user ID in token".to_string()))?;
 
@@ -348,7 +348,7 @@ pub async fn change_password(
                     "authentication",
                     Some(user_id),
                     Some(format!("Password for {}", claims.username)),
-                    Some("Password changed successfully".to_string()),
+                    Some("Password changed successfully - user logged out for security".to_string()),
                     None,
                     None,
                     true,
@@ -359,10 +359,29 @@ pub async fn change_password(
                 eprintln!("Failed to log password change: {}", e);
             }
 
-            Ok(Json(json!({
+            // Clear the authentication cookie for security
+            let clear_cookie = "admin_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0";
+
+            let json_response = Json(json!({
                 "success": true,
-                "message": "Password changed successfully"
-            })))
+                "message": "Password changed successfully. Please log in again with your new password.",
+                "requires_reauth": true
+            }));
+
+            let mut response =
+                axum::response::Response::new(serde_json::to_string(&json_response.0).unwrap().into());
+
+            response.headers_mut().insert(
+                axum::http::header::CONTENT_TYPE,
+                "application/json".parse().unwrap(),
+            );
+
+            // Clear the authentication cookie
+            response
+                .headers_mut()
+                .insert(SET_COOKIE, clear_cookie.parse().unwrap());
+
+            Ok(response)
         }
         Err(e) => {
             // Log failed password change

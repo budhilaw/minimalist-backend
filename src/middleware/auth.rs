@@ -88,7 +88,7 @@ pub async fn optional_auth_middleware(
 
     if let Some(token) = token {
         if let Ok(claims) = auth_service.validate_token(&token) {
-            request.extensions_mut().insert(claims);
+                    request.extensions_mut().insert(claims);
         }
     }
 

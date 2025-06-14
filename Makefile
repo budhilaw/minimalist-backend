@@ -147,21 +147,65 @@ docker-build: ## 🐳 Build Docker image
 	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
 	@docker build -t portfolio-backend .
 
+docker-build-no-cache: ## 🐳 Build Docker image without cache
+	@echo "$(CYAN)🐳 Building Docker image (no cache)...$(RESET)"
+	@docker build --no-cache -t portfolio-backend .
+
 docker-run: ## 🐳 Run Docker container
 	@echo "$(CYAN)🐳 Running Docker container...$(RESET)"
 	@docker run -p 8000:8000 --env-file .env portfolio-backend
 
-docker-compose-up: ## 🐳 Start all services with docker-compose
+docker-run-dev: ## 🐳 Run Docker container with development settings
+	@echo "$(CYAN)🐳 Running Docker container (development)...$(RESET)"
+	@docker run -p 8000:8000 -e RUST_LOG=debug --env-file .env portfolio-backend
+
+docker-compose-up: ## 🐳 Start all services with docker-compose (production)
 	@echo "$(CYAN)🐳 Starting services with docker-compose...$(RESET)"
-	@docker-compose up -d
+	@docker-compose -f docker-compose.prod.yml up -d
+
+docker-compose-dev: ## 🐳 Start development services with docker-compose
+	@echo "$(CYAN)🐳 Starting development services...$(RESET)"
+	@docker-compose -f docker-compose.dev.yml up -d --build
+
+docker-compose-up-build: ## 🐳 Start services and rebuild images
+	@echo "$(CYAN)🐳 Starting services with rebuild...$(RESET)"
+	@docker-compose -f docker-compose.prod.yml up -d --build
 
 docker-compose-down: ## 🐳 Stop all services with docker-compose
 	@echo "$(CYAN)🐳 Stopping services with docker-compose...$(RESET)"
-	@docker-compose down
+	@docker-compose -f docker-compose.prod.yml down
+
+docker-compose-down-volumes: ## 🐳 Stop services and remove volumes
+	@echo "$(CYAN)🐳 Stopping services and removing volumes...$(RESET)"
+	@docker-compose -f docker-compose.prod.yml down -v
 
 docker-logs: ## 🐳 View Docker container logs
 	@echo "$(CYAN)🐳 Viewing Docker logs...$(RESET)"
-	@docker-compose logs -f
+	@docker-compose -f docker-compose.prod.yml logs -f
+
+docker-logs-api: ## 🐳 View API container logs only
+	@echo "$(CYAN)🐳 Viewing API logs...$(RESET)"
+	@docker-compose -f docker-compose.prod.yml logs -f api
+
+docker-migrate: ## 🐳 Run database migrations in Docker
+	@echo "$(CYAN)🐳 Running migrations in Docker...$(RESET)"
+	@docker-compose -f docker-compose.prod.yml run --rm migrate
+
+docker-seed: ## 🐳 Seed database in Docker
+	@echo "$(CYAN)🐳 Seeding database in Docker...$(RESET)"
+	@docker-compose -f docker-compose.prod.yml run --rm api ./seed
+
+docker-shell: ## 🐳 Open shell in running API container
+	@echo "$(CYAN)🐳 Opening shell in API container...$(RESET)"
+	@docker-compose -f docker-compose.prod.yml exec api sh
+
+docker-clean: ## 🐳 Clean Docker images and containers
+	@echo "$(CYAN)🐳 Cleaning Docker resources...$(RESET)"
+	@docker system prune -f
+	@docker image prune -f
+
+docker-reset: docker-compose-down-volumes docker-clean docker-compose-up-build ## 🐳 Complete Docker reset
+	@echo "$(GREEN)🐳 Docker environment reset complete!$(RESET)"
 
 ##@ Maintenance Commands
 

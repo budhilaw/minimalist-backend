@@ -1,0 +1,97 @@
+services:
+  # PostgreSQL Database for Development
+  postgres:
+    image: postgres:15-alpine
+    container_name: minimalist_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: personal-website
+      POSTGRES_USER: kai
+      POSTGRES_PASSWORD: 1550
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - portfolio-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kai -d personal-website"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Development
+  redis:
+    image: redis:7-alpine
+    container_name: minimalist_redis_dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - portfolio-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database Migration Service (runs once)
+  migrate:
+    build: .
+    container_name: portfolio-migrate-dev
+    environment:
+      - DATABASE_URL=postgresql://kai:1550@postgres:5432/personal-website
+      - RUST_LOG=debug
+    volumes:
+      - ./.secret.yaml:/app/.secret.yaml:ro
+    networks:
+      - portfolio-dev-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["sh", "-c", "sqlx migrate run && ./seed"]
+    restart: "no"
+
+  # Backend API for Development
+  api:
+    build: .
+    container_name: portfolio-backend-dev
+    restart: unless-stopped
+    environment:
+      - RUST_LOG=debug
+      - DATABASE_URL=postgresql://kai:1550@postgres:5432/personal-website
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./.secret.yaml:/app/.secret.yaml:ro
+      - ./src:/app/src:ro  # Mount source for development
+    ports:
+      - "8000:8000"
+    networks:
+      - portfolio-dev-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+
+networks:
+  portfolio-dev-network:
+    driver: bridge 

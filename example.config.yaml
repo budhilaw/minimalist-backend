@@ -74,4 +74,6 @@ file_upload:
 
 cache:
   default_ttl: 3600       # Default cache TTL (1 hour)
-  user_session_ttl: 86400 # User session cache TTL (24 hours) 
+  user_session_ttl: 86400 # User session cache TTL (24 hours)
+
+ 

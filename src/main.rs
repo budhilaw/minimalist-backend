@@ -15,7 +15,9 @@ use portfolio_backend::{
         connection::{create_pool, run_migrations},
         // seeder::DatabaseSeeder, // Removed unused import - seeding disabled to prevent data loss
     },
-    handlers::{admin_settings, audit_log, auth, comment, portfolio, post, service},
+    handlers::{
+        admin_settings, audit_log, auth, comment, portfolio, post, service, user_notification,
+    },
     middleware::{
         auth::auth_middleware,
         rate_limiter::RedisRateLimiter,
@@ -28,6 +30,7 @@ use portfolio_backend::{
         comment_repository::CommentRepository, portfolio_repository::PortfolioRepository,
         post_repository::PostRepository, service_repository::ServiceRepository,
         user_repository::UserRepository, AdminSettingsRepository, AuditLogRepository,
+        UserNotificationRepository,
     },
     services::{
         admin_settings_service::{AdminSettingsService, AdminSettingsServiceTrait},
@@ -35,8 +38,10 @@ use portfolio_backend::{
         auth_service::AuthService,
         blog_service::{BlogService, BlogServiceTrait},
         comment_service::{CommentService, CommentServiceTrait},
+
         portfolio_service::{PortfolioService, PortfolioServiceTrait},
         service_service::{ServiceService, ServiceServiceTrait},
+        user_notification_service::{UserNotificationService, UserNotificationServiceTrait},
     },
     utils::{config::AppConfig, errors::AppError},
 };
@@ -88,6 +93,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let comment_repository = Arc::new(CommentRepository::new(pool.clone()));
     let audit_log_repository = Arc::new(AuditLogRepository::new(pool.clone()));
     let admin_settings_repository = Arc::new(AdminSettingsRepository::new(pool.clone()));
+    let user_notification_repository: Arc<UserNotificationRepository> =
+        Arc::new(UserNotificationRepository::new(pool.clone()));
 
     // Safely initialize admin settings if they don't exist (won't overwrite existing data)
     admin_settings_repository.ensure_settings_exist().await?;
@@ -104,12 +111,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_service: Arc<dyn ServiceServiceTrait> =
         Arc::new(ServiceService::new(service_repository));
     let blog_service: Arc<dyn BlogServiceTrait> = Arc::new(BlogService::new(post_repository));
-    let comment_service: Arc<dyn CommentServiceTrait> =
-        Arc::new(CommentService::new(comment_repository));
     let audit_log_service: Arc<dyn AuditLogServiceTrait> =
         Arc::new(AuditLogService::new(audit_log_repository));
     let admin_settings_service: Arc<dyn AdminSettingsServiceTrait> =
         Arc::new(AdminSettingsService::new(admin_settings_repository));
+    let comment_service: Arc<dyn CommentServiceTrait> =
+        Arc::new(CommentService::new(comment_repository, admin_settings_service.clone()));
+    let user_notification_service: Arc<dyn UserNotificationServiceTrait> =
+        Arc::new(UserNotificationService::new(user_notification_repository));
+
+    // CAPTCHA verifier and spam detector removed since contact form is no longer used
+
+
 
     // Initialize Redis rate limiter
     let rate_limiter = match config.get_redis_url() {
@@ -138,9 +151,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         audit_log_service: audit_log_service.clone(),
     };
     let admin_settings_state = admin_settings::AdminSettingsState {
-        admin_settings_service,
+        admin_settings_service: admin_settings_service.clone(),
         rate_limiter: rate_limiter.clone(),
     };
+    let user_notification_state = user_notification::UserNotificationState {
+        user_notification_service,
+    };
+
 
     // Create auth state with auth service, audit log service, and rate limiter
     let auth_state = auth::AuthState {
@@ -158,6 +175,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         comment_state,
         audit_log_state,
         admin_settings_state,
+        user_notification_state,
         &config,
         rate_limiter,
     );
@@ -187,6 +205,7 @@ fn create_app(
     comment_state: comment::CommentState,
     audit_log_state: audit_log::AuditLogState,
     admin_settings_state: admin_settings::AdminSettingsState,
+    user_notification_state: user_notification::UserNotificationState,
     config: &AppConfig,
     _rate_limiter: Option<Arc<RedisRateLimiter>>,
 ) -> Router {
@@ -283,6 +302,7 @@ fn create_app(
     let post_public_routes = Router::new()
         .route("/", get(post::get_all_posts))
         .route("/:id", get(post::get_post))
+        .route("/slug/:slug", get(post::get_post_by_slug))
         .route("/published", get(post::get_published_posts))
         .route("/featured", get(post::get_featured_posts))
         .route("/categories", get(post::get_all_posts))
@@ -296,6 +316,10 @@ fn create_app(
             get(comment::get_comment).delete(comment::delete_comment),
         )
         .route("/:id/status", put(comment::update_comment_status))
+        .route("/:id/approve", put(comment::approve_comment))
+        .route("/:id/reject", put(comment::reject_comment))
+        .route("/pending", get(comment::get_pending_comments))
+        .route("/bulk-status", put(comment::bulk_update_comment_status))
         .route("/stats", get(comment::get_comment_stats))
         .with_state(comment_state.clone())
         .route_layer(middleware::from_fn_with_state(
@@ -311,7 +335,10 @@ fn create_app(
 
     // Audit log routes (protected)
     let audit_log_routes = Router::new()
-        .route("/", get(audit_log::get_audit_logs))
+        .route(
+            "/",
+            get(audit_log::get_audit_logs).post(audit_log::create_audit_log),
+        )
         .route("/:id", get(audit_log::get_audit_log))
         .route("/recent", get(audit_log::get_recent_audit_logs))
         .route("/stats", get(audit_log::get_audit_log_stats))
@@ -323,7 +350,10 @@ fn create_app(
 
     // Admin settings routes (protected)
     let admin_settings_routes = Router::new()
-        .route("/", get(admin_settings::get_settings))
+        .route(
+            "/",
+            get(admin_settings::get_settings).put(admin_settings::update_settings),
+        )
         .route("/features", get(admin_settings::get_settings))
         .route("/features", put(admin_settings::update_feature_settings))
         .route("/security", get(admin_settings::get_settings))
@@ -362,6 +392,39 @@ fn create_app(
         .route("/public", get(admin_settings::get_public_settings))
         .with_state(admin_settings_state);
 
+    // User notification routes (protected)
+    let user_notification_routes = Router::new()
+        .route("/", get(user_notification::get_user_notifications))
+        .route(
+            "/mark-read",
+            post(user_notification::mark_notification_read),
+        )
+        .route(
+            "/mark-multiple-read",
+            post(user_notification::mark_notifications_read),
+        )
+        .route(
+            "/mark-all-read",
+            post(user_notification::mark_all_notifications_read),
+        )
+        .route("/stats", get(user_notification::get_notification_stats))
+        .route("/unread-count", get(user_notification::get_unread_count))
+        .route(
+            "/preferences",
+            get(user_notification::get_notification_preferences),
+        )
+        .route(
+            "/preferences",
+            put(user_notification::update_notification_preference),
+        )
+        .with_state(user_notification_state)
+        .route_layer(middleware::from_fn_with_state(
+            auth_state.auth_service.clone(),
+            auth_middleware,
+        ));
+
+
+
     Router::new()
         .nest("/api/v1/auth", protected_routes)
         .nest("/api/v1/auth", public_routes)
@@ -373,9 +436,11 @@ fn create_app(
         .nest("/api/v1/posts", post_public_routes)
         .nest("/api/v1/comments", comment_protected_routes)
         .nest("/api/v1/comments", comment_public_routes)
+
         .nest("/api/v1/admin/audit-logs", audit_log_routes)
         .nest("/api/v1/admin/settings", admin_settings_routes)
         .nest("/api/v1/settings", settings_public_routes)
+        .nest("/api/v1/user/notifications", user_notification_routes)
         .route("/api/v1/health", get(health_check))
         .layer(
             ServiceBuilder::new()

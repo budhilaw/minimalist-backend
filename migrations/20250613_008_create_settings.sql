@@ -12,10 +12,22 @@ CREATE TABLE admin_settings (
 -- Insert default settings
 INSERT INTO admin_settings (setting_key, setting_value, description) VALUES
 ('general', '{
-    "siteName": "John Doe Portfolio",
+    "siteName": "Ericsson Budhilaw",
     "siteDescription": "Senior Software Engineer specializing in consulting and freelancing",
     "maintenanceMode": false,
-    "maintenanceMessage": "The site is currently under maintenance. Please check back later."
+    "maintenanceMessage": "The site is currently under maintenance. Please check back later.",
+    "photo_profile": null,
+    "social_media_links": {
+        "github": "https://github.com/budhilaw",
+        "linkedin": "https://linkedin.com/in/budhilaw",
+        "x": "https://x.com/ceritaeric",
+        "facebook": "https://facebook.com/ceritaeric",
+        "instagram": "https://instagram.com/ceritaeric",
+        "email": "ericsson@budhilaw.com"
+    },
+    "files": {
+        "resume_links": "https://drive.google.com/"
+    }
 }', 'General site configuration'),
 
 ('features', '{

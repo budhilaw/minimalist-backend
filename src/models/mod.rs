@@ -5,3 +5,4 @@ pub mod portfolio;
 pub mod post;
 pub mod service;
 pub mod user;
+pub mod user_notification;

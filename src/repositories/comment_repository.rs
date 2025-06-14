@@ -5,7 +5,7 @@ use uuid::Uuid;
 use anyhow::{Context, Result};
 
 use crate::models::comment::{
-    Comment, CommentModerationInfo, CommentQuery, CommentStats, CommentsResponse,
+    Comment, CommentModerationInfo, CommentQuery, CommentResponse, CommentStats, CommentsResponse,
     CreateCommentRequest, UpdateCommentStatusRequest,
 };
 use crate::utils::errors::AppError;
@@ -65,7 +65,7 @@ impl CommentRepositoryTrait for CommentRepository {
         let comment = sqlx::query_as::<_, Comment>(
             r#"
             SELECT id, post_id, author_name, author_email, content, status, 
-                   ip_address, user_agent, parent_id, created_at, updated_at
+                   ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
             FROM comments 
             WHERE id = $1
             "#,
@@ -82,34 +82,38 @@ impl CommentRepositoryTrait for CommentRepository {
         let limit = query.limit.unwrap_or(20).min(100);
         let offset = (query.page.unwrap_or(1) - 1) * limit;
 
-        // For simplicity, using basic query without complex dynamic binding
-        let base_count_query = "SELECT COUNT(*) FROM comments";
-        let base_comments_query = r#"
-            SELECT id, post_id, author_name, author_email, content, status, 
-                   ip_address, user_agent, parent_id, created_at, updated_at
-            FROM comments 
-            ORDER BY created_at DESC 
-            LIMIT $1 OFFSET $2
-        "#;
-
         // Get total count
-        let total: i64 = sqlx::query_scalar(base_count_query)
+        let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM comments")
             .fetch_one(&self.pool)
             .await
             .context("Failed to count comments")?;
 
-        // Get comments
-        let comments = sqlx::query_as::<_, Comment>(base_comments_query)
-            .bind(limit as i64)
-            .bind(offset as i64)
-            .fetch_all(&self.pool)
-            .await
-            .context("Failed to fetch comments")?;
+        // Get comments with simplified query
+        let comments = sqlx::query_as::<_, Comment>(
+            r#"
+            SELECT id, post_id, author_name, author_email, content, status, 
+                   ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
+            FROM comments 
+            ORDER BY created_at DESC 
+            LIMIT $1 OFFSET $2
+            "#,
+        )
+        .bind(limit as i64)
+        .bind(offset as i64)
+        .fetch_all(&self.pool)
+        .await
+        .context("Failed to fetch comments")?;
 
         let total_pages = (total as f64 / limit as f64).ceil() as u32;
 
+        // Convert comments to response format
+        let comment_responses: Vec<CommentResponse> = comments
+            .into_iter()
+            .map(CommentResponse::from)
+            .collect();
+
         Ok(CommentsResponse {
-            comments: comments.into_iter().map(|c| c.into()).collect(),
+            comments: comment_responses,
             total,
             page: query.page.unwrap_or(1),
             limit,
@@ -129,9 +133,9 @@ impl CommentRepositoryTrait for CommentRepository {
                 post_id, author_name, author_email, content, status, 
                 ip_address, user_agent, parent_id
             )
-            VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7)
+            VALUES ($1, $2, $3, $4, 'pending', $5::inet, $6, $7)
             RETURNING id, post_id, author_name, author_email, content, status, 
-                      ip_address, user_agent, parent_id, created_at, updated_at
+                      ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
             "#,
         )
         .bind(comment.post_id)
@@ -161,9 +165,9 @@ impl CommentRepositoryTrait for CommentRepository {
                 post_id, author_name, author_email, content, status, 
                 ip_address, user_agent, parent_id
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            VALUES ($1, $2, $3, $4, $5, $6::inet, $7, $8)
             RETURNING id, post_id, author_name, author_email, content, status, 
-                      ip_address, user_agent, parent_id, created_at, updated_at
+                      ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
             "#,
         )
         .bind(comment.post_id)
@@ -192,7 +196,7 @@ impl CommentRepositoryTrait for CommentRepository {
             SET status = $1, updated_at = NOW()
             WHERE id = $2
             RETURNING id, post_id, author_name, author_email, content, status, 
-                      ip_address, user_agent, parent_id, created_at, updated_at
+                      ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
             "#,
         )
         .bind(&status.status)
@@ -228,7 +232,7 @@ impl CommentRepositoryTrait for CommentRepository {
             sqlx::query_as::<_, Comment>(
                 r#"
                 SELECT id, post_id, author_name, author_email, content, status, 
-                       ip_address, user_agent, parent_id, created_at, updated_at
+                       ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
                 FROM comments 
                 WHERE post_id = $1 AND status = 'approved'
                 ORDER BY created_at ASC
@@ -238,7 +242,7 @@ impl CommentRepositoryTrait for CommentRepository {
             sqlx::query_as::<_, Comment>(
                 r#"
                 SELECT id, post_id, author_name, author_email, content, status, 
-                       ip_address, user_agent, parent_id, created_at, updated_at
+                       ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
                 FROM comments 
                 WHERE post_id = $1 AND status = 'approved' AND parent_id IS NULL
                 ORDER BY created_at ASC
@@ -258,7 +262,7 @@ impl CommentRepositoryTrait for CommentRepository {
             r#"
             SELECT 
                 c.id, c.post_id, p.title as post_title, c.author_name, 
-                c.author_email, c.content, c.status, c.ip_address, 
+                c.author_email, c.content, c.status, c.ip_address::text as ip_address, 
                 c.user_agent, c.created_at
             FROM comments c
             LEFT JOIN posts p ON c.post_id = p.id
@@ -317,7 +321,7 @@ impl CommentRepositoryTrait for CommentRepository {
         let replies = sqlx::query_as::<_, Comment>(
             r#"
             SELECT id, post_id, author_name, author_email, content, status, 
-                   ip_address, user_agent, parent_id, created_at, updated_at
+                   ip_address::text as ip_address, user_agent, parent_id, created_at, updated_at
             FROM comments 
             WHERE parent_id = $1 AND status = 'approved'
             ORDER BY created_at ASC
@@ -349,7 +353,7 @@ impl CommentRepositoryTrait for CommentRepository {
         seconds_ago: i64,
     ) -> Result<i64, AppError> {
         let result = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM comments WHERE ip_address = $1 AND created_at >= NOW() - INTERVAL '1 second' * $2"
+            "SELECT COUNT(*) FROM comments WHERE ip_address = $1::inet AND created_at >= NOW() - INTERVAL '1 second' * $2"
         )
         .bind(ip_address)
         .bind(seconds_ago)

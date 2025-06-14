@@ -27,6 +27,8 @@ pub struct CommentResponse {
     pub author_email: String,
     pub content: String,
     pub status: String,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
     pub parent_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -42,6 +44,8 @@ impl From<Comment> for CommentResponse {
             author_email: comment.author_email,
             content: comment.content,
             status: comment.status,
+            ip_address: comment.ip_address,
+            user_agent: comment.user_agent,
             parent_id: comment.parent_id,
             created_at: comment.created_at,
             updated_at: comment.updated_at,
@@ -55,16 +59,16 @@ pub struct CreateCommentRequest {
     pub post_id: Uuid,
     #[validate(length(
         min = 1,
-        max = 255,
-        message = "Author name is required and must be less than 255 characters"
+        max = 100,
+        message = "Author name is required and must be less than 100 characters"
     ))]
     pub author_name: String,
     #[validate(email(message = "Please provide a valid email address"))]
     pub author_email: String,
     #[validate(length(
-        min = 1,
-        max = 2000,
-        message = "Content is required and must be less than 2000 characters"
+        min = 5,
+        max = 5000,
+        message = "Content must be between 5 and 5000 characters"
     ))]
     pub content: String,
     pub parent_id: Option<Uuid>,

@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                COUNT(al.id) as total_notifications,\n                COUNT(al.id) - COUNT(unr.id) as unread_notifications,\n                COUNT(unr.id) as read_notifications,\n                COUNT(CASE WHEN al.created_at >= CURRENT_DATE THEN 1 END) as notifications_today,\n                MAX(unr.read_at) as last_read_at\n            FROM audit_logs al\n            LEFT JOIN user_notification_reads unr ON al.id = unr.audit_log_id AND unr.user_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total_notifications",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "unread_notifications",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "read_notifications",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "notifications_today",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_read_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "87bc54c391b39fc68cd3bc620c7ec2a13262a6d48250a6797428aff4072b7d6d"
+}

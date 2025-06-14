@@ -21,6 +21,7 @@ COPY Cargo.lock ./
 
 # Create a dummy main.rs to build dependencies
 RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN mkdir -p src/bin && echo "fn main() {}" > src/bin/seed.rs
 
 # Build dependencies (this will be cached)
 RUN cargo build --release && rm -rf src
@@ -30,7 +31,7 @@ COPY src ./src
 COPY migrations ./migrations
 COPY .sqlx ./.sqlx
 
-# Build the application
+# Build the application and seed binary
 RUN cargo build --release
 
 # Runtime stage
@@ -50,12 +51,16 @@ RUN useradd -r -s /bin/false -m -d /app app
 # Create app directory
 WORKDIR /app
 
-# Copy the binary from builder stage
+# Copy the binaries from builder stage
 COPY --from=builder /app/target/release/portfolio-backend ./app
+COPY --from=builder /app/target/release/seed ./seed
 
 # Copy configuration files (gracefully handle missing files)
 COPY example.config.yaml ./.config.yaml
 COPY example.secret.yaml ./.secret.yaml
+
+# Copy migrations for runtime access
+COPY migrations ./migrations
 
 # Change ownership
 RUN chown -R app:app /app

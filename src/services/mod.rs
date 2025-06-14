@@ -5,3 +5,4 @@ pub mod blog_service;
 pub mod comment_service;
 pub mod portfolio_service;
 pub mod service_service;
+pub mod user_notification_service;

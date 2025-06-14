@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT COUNT(al.id) as unread_count\n            FROM audit_logs al\n            LEFT JOIN user_notification_reads unr ON al.id = unr.audit_log_id AND unr.user_id = $1\n            WHERE unr.id IS NULL\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "unread_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "188becf14d63efdc34639200fb4cfde2f97314aa2e9fd478d9e6a82e1a540d99"
+}

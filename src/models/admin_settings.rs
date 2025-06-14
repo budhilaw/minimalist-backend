@@ -80,6 +80,22 @@ pub struct SecuritySettings {
     pub two_factor_enabled: bool,
     #[serde(rename = "ipWhitelist")]
     pub ip_whitelist: Vec<String>,
+    #[serde(rename = "commentRateLimit", default)]
+    pub comment_rate_limit: CommentRateLimitSettings,
+    #[serde(rename = "commentApprovalRequired", default)]
+    pub comment_approval_required: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommentRateLimitSettings {
+    #[serde(rename = "enabled")]
+    pub enabled: bool,
+    #[serde(rename = "maxCommentsPerHour")]
+    pub max_comments_per_hour: i32,
+    #[serde(rename = "maxCommentsPerMinute")]
+    pub max_comments_per_minute: i32,
+    #[serde(rename = "minuteWindow")]
+    pub minute_window: i32, // in minutes
 }
 
 #[derive(Debug, Deserialize)]
@@ -159,6 +175,19 @@ impl Default for SecuritySettings {
             max_login_attempts: 5,
             two_factor_enabled: false,
             ip_whitelist: vec![],
+            comment_rate_limit: CommentRateLimitSettings::default(),
+            comment_approval_required: false,
+        }
+    }
+}
+
+impl Default for CommentRateLimitSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_comments_per_hour: 10, // More lenient than the current 3
+            max_comments_per_minute: 2, // Allow 2 comments per minute instead of 1 per 5 minutes
+            minute_window: 1, // Check within 1 minute window
         }
     }
 }

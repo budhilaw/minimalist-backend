@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE contact_submissions \n            SET status = $1, admin_notes = $2, updated_at = $3, replied_at = $4\n            WHERE id = $5\n            RETURNING \n                id, name, email, message, status as \"status: ContactStatus\", ip_address, user_agent, \n                spam_score, is_spam, created_at, updated_at, replied_at, admin_notes\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "message",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "status: ContactStatus",
+        "type_info": {
+          "Custom": {
+            "name": "contact_status",
+            "kind": {
+              "Enum": [
+                "new",
+                "read",
+                "replied",
+                "archived",
+                "spam"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "ip_address",
+        "type_info": "Inet"
+      },
+      {
+        "ordinal": 6,
+        "name": "user_agent",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "spam_score",
+        "type_info": "Float4"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_spam",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "replied_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "admin_notes",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "contact_status",
+            "kind": {
+              "Enum": [
+                "new",
+                "read",
+                "replied",
+                "archived",
+                "spam"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "f2e14652666d2ead34e0ecac52a0319ada775c145f3e92df3898dce8193d29d7"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO user_notification_reads (user_id, audit_log_id)\n            SELECT $1, al.id\n            FROM audit_logs al\n            WHERE NOT EXISTS (\n                SELECT 1 FROM user_notification_reads unr \n                WHERE unr.user_id = $1 AND unr.audit_log_id = al.id\n            )\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fa1ea736f3e3696ed2b52a0ba969776c867c9f7a301320a5fbd1f7c5923ef584"
+}
