@@ -107,10 +107,8 @@ impl CommentRepositoryTrait for CommentRepository {
         let total_pages = (total as f64 / limit as f64).ceil() as u32;
 
         // Convert comments to response format
-        let comment_responses: Vec<CommentResponse> = comments
-            .into_iter()
-            .map(CommentResponse::from)
-            .collect();
+        let comment_responses: Vec<CommentResponse> =
+            comments.into_iter().map(CommentResponse::from).collect();
 
         Ok(CommentsResponse {
             comments: comment_responses,

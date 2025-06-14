@@ -68,8 +68,6 @@ pub struct PaginationConfig {
     pub max_limit: u32,
 }
 
-
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
     pub database: DatabaseConfig,
@@ -88,7 +86,6 @@ pub struct SecretConfig {
     pub database: DatabaseSecrets,
     pub redis: RedisSecrets,
     pub auth: AuthSecrets,
-
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -106,8 +103,6 @@ pub struct AuthSecrets {
     pub jwt_secret: String,
     pub refresh_secret: String,
 }
-
-
 
 impl AppConfig {
     pub fn from_yaml() -> Result<(Self, SecretConfig), anyhow::Error> {

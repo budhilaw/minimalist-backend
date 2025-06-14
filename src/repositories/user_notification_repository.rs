@@ -323,4 +323,3 @@ impl UserNotificationRepository {
         Ok(result.rows_affected() as i64)
     }
 }
- 

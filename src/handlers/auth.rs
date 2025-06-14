@@ -348,7 +348,9 @@ pub async fn change_password(
                     "authentication",
                     Some(user_id),
                     Some(format!("Password for {}", claims.username)),
-                    Some("Password changed successfully - user logged out for security".to_string()),
+                    Some(
+                        "Password changed successfully - user logged out for security".to_string(),
+                    ),
                     None,
                     None,
                     true,
@@ -368,8 +370,9 @@ pub async fn change_password(
                 "requires_reauth": true
             }));
 
-            let mut response =
-                axum::response::Response::new(serde_json::to_string(&json_response.0).unwrap().into());
+            let mut response = axum::response::Response::new(
+                serde_json::to_string(&json_response.0).unwrap().into(),
+            );
 
             response.headers_mut().insert(
                 axum::http::header::CONTENT_TYPE,

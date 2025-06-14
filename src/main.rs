@@ -38,7 +38,6 @@ use portfolio_backend::{
         auth_service::AuthService,
         blog_service::{BlogService, BlogServiceTrait},
         comment_service::{CommentService, CommentServiceTrait},
-
         portfolio_service::{PortfolioService, PortfolioServiceTrait},
         service_service::{ServiceService, ServiceServiceTrait},
         user_notification_service::{UserNotificationService, UserNotificationServiceTrait},
@@ -115,14 +114,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(AuditLogService::new(audit_log_repository));
     let admin_settings_service: Arc<dyn AdminSettingsServiceTrait> =
         Arc::new(AdminSettingsService::new(admin_settings_repository));
-    let comment_service: Arc<dyn CommentServiceTrait> =
-        Arc::new(CommentService::new(comment_repository, admin_settings_service.clone()));
+    let comment_service: Arc<dyn CommentServiceTrait> = Arc::new(CommentService::new(
+        comment_repository,
+        admin_settings_service.clone(),
+    ));
     let user_notification_service: Arc<dyn UserNotificationServiceTrait> =
         Arc::new(UserNotificationService::new(user_notification_repository));
 
     // CAPTCHA verifier and spam detector removed since contact form is no longer used
-
-
 
     // Initialize Redis rate limiter
     let rate_limiter = match config.get_redis_url() {
@@ -157,7 +156,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let user_notification_state = user_notification::UserNotificationState {
         user_notification_service,
     };
-
 
     // Create auth state with auth service, audit log service, and rate limiter
     let auth_state = auth::AuthState {
@@ -423,8 +421,6 @@ fn create_app(
             auth_middleware,
         ));
 
-
-
     Router::new()
         .nest("/api/v1/auth", protected_routes)
         .nest("/api/v1/auth", public_routes)
@@ -436,7 +432,6 @@ fn create_app(
         .nest("/api/v1/posts", post_public_routes)
         .nest("/api/v1/comments", comment_protected_routes)
         .nest("/api/v1/comments", comment_public_routes)
-
         .nest("/api/v1/admin/audit-logs", audit_log_routes)
         .nest("/api/v1/admin/settings", admin_settings_routes)
         .nest("/api/v1/settings", settings_public_routes)

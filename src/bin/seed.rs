@@ -29,4 +29,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✅ Database seeding completed successfully!");
 
     Ok(())
-} 
+}

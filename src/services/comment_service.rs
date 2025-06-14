@@ -52,7 +52,7 @@ impl CommentService {
         repository: Arc<dyn CommentRepositoryTrait>,
         admin_settings_service: Arc<dyn AdminSettingsServiceTrait>,
     ) -> Self {
-        Self { 
+        Self {
             repository,
             admin_settings_service,
         }
@@ -60,7 +60,8 @@ impl CommentService {
 
     // Check if comments are enabled in admin settings
     async fn check_comments_enabled(&self) -> Result<()> {
-        let comments_enabled = self.admin_settings_service
+        let comments_enabled = self
+            .admin_settings_service
             .is_feature_enabled("comments")
             .await
             .unwrap_or(true); // Default to enabled if check fails
@@ -126,7 +127,9 @@ impl CommentServiceTrait for CommentService {
         }
 
         // Business logic: Auto-moderate based on content and email
-        let requires_moderation = self.requires_moderation(&request.content, &request.author_email).await?;
+        let requires_moderation = self
+            .requires_moderation(&request.content, &request.author_email)
+            .await?;
 
         // Determine initial status based on admin settings and content analysis
         let initial_status = if requires_moderation {
@@ -308,10 +311,24 @@ impl CommentService {
 
         // Common spam indicators
         let spam_keywords = [
-            "viagra", "casino", "lottery", "winner", "congratulations",
-            "click here", "free money", "make money fast", "work from home",
-            "buy now", "limited time", "act now", "urgent", "guaranteed",
-            "no risk", "100% free", "amazing deal", "incredible offer",
+            "viagra",
+            "casino",
+            "lottery",
+            "winner",
+            "congratulations",
+            "click here",
+            "free money",
+            "make money fast",
+            "work from home",
+            "buy now",
+            "limited time",
+            "act now",
+            "urgent",
+            "guaranteed",
+            "no risk",
+            "100% free",
+            "amazing deal",
+            "incredible offer",
         ];
 
         for keyword in &spam_keywords {
@@ -344,7 +361,11 @@ impl CommentService {
 
     async fn requires_moderation(&self, content: &str, email: &str) -> Result<bool> {
         // Check admin setting first - if comment approval is required, all comments need moderation
-        let settings = self.admin_settings_service.get_all_settings().await.unwrap_or_default();
+        let settings = self
+            .admin_settings_service
+            .get_all_settings()
+            .await
+            .unwrap_or_default();
         if settings.security.comment_approval_required {
             return Ok(true);
         }
@@ -392,7 +413,11 @@ impl CommentService {
 
     async fn check_rate_limit(&self, ip_address: &str) -> Result<bool> {
         // Get rate limiting settings from admin settings
-        let settings = self.admin_settings_service.get_all_settings().await.unwrap_or_default();
+        let settings = self
+            .admin_settings_service
+            .get_all_settings()
+            .await
+            .unwrap_or_default();
         let rate_limit_settings = &settings.security.comment_rate_limit;
 
         // If rate limiting is disabled, allow all comments

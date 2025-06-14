@@ -1,8 +1,8 @@
 use crate::{
     models::user_notification::{
         MarkNotificationReadRequest, MarkNotificationsReadRequest, NotificationStats,
-        UpdateNotificationPreferenceRequest,
-        UserNotificationPreference, UserNotificationRead, UserNotificationsResponse,
+        UpdateNotificationPreferenceRequest, UserNotificationPreference, UserNotificationRead,
+        UserNotificationsResponse,
     },
     repositories::UserNotificationRepository,
     utils::errors::AppError,
@@ -233,4 +233,3 @@ impl UserNotificationServiceTrait for UserNotificationService {
             .map_err(|e| AppError::Internal(e.to_string()).into())
     }
 }
- 

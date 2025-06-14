@@ -185,9 +185,9 @@ impl Default for CommentRateLimitSettings {
     fn default() -> Self {
         Self {
             enabled: true,
-            max_comments_per_hour: 10, // More lenient than the current 3
+            max_comments_per_hour: 10,  // More lenient than the current 3
             max_comments_per_minute: 2, // Allow 2 comments per minute instead of 1 per 5 minutes
-            minute_window: 1, // Check within 1 minute window
+            minute_window: 1,           // Check within 1 minute window
         }
     }
 }

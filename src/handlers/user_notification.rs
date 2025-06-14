@@ -8,7 +8,6 @@ use std::sync::Arc;
 use tracing::info;
 use uuid::Uuid;
 
-
 use crate::{
     models::user_notification::{
         MarkNotificationReadRequest, MarkNotificationsReadRequest,
@@ -239,4 +238,3 @@ pub async fn update_notification_preference(
         "preference": preference
     })))
 }
- 
