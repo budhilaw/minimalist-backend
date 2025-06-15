@@ -44,6 +44,20 @@ pub async fn get_project(
     Ok(Json(json!(project)))
 }
 
+// GET /api/v1/portfolio/slug/:slug
+pub async fn get_project_by_slug(
+    State(state): State<PortfolioState>,
+    Path(slug): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    let project = state
+        .portfolio_service
+        .get_project_by_slug(&slug)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Portfolio project not found".to_string()))?;
+
+    Ok(Json(json!(project)))
+}
+
 // POST /api/v1/portfolio
 pub async fn create_project(
     State(state): State<PortfolioState>,

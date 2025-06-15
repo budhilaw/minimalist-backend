@@ -50,6 +50,7 @@ pub async fn get_post(
 pub async fn get_post_by_slug(
     State(state): State<PostState>,
     Path(slug): Path<String>,
+    Query(query): Query<serde_json::Value>,
 ) -> Result<Json<Value>, AppError> {
     let post = state
         .blog_service
@@ -57,8 +58,22 @@ pub async fn get_post_by_slug(
         .await?
         .ok_or_else(|| AppError::NotFound("Post not found".to_string()))?;
 
-    // Increment view count
-    let _ = state.blog_service.increment_view_count(post.id).await;
+    // Check if this is a preview request
+    let is_preview = query
+        .get("preview")
+        .and_then(|v| v.as_str())
+        .map(|s| s == "true")
+        .unwrap_or(false);
+
+    // If not in preview mode and post is not published, return 404
+    if !is_preview && !post.published {
+        return Err(AppError::NotFound("Post not found".to_string()));
+    }
+
+    // Only increment view count for published posts (not previews)
+    if post.published && !is_preview {
+        let _ = state.blog_service.increment_view_count(post.id).await;
+    }
 
     Ok(Json(json!(post)))
 }

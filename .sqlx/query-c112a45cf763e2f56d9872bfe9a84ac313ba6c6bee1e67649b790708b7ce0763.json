@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                CASE \n                    WHEN referrer IS NULL OR referrer = '' THEN 'Direct'\n                    ELSE referrer\n                END as referrer,\n                COUNT(DISTINCT CONCAT(ip_address, COALESCE(user_agent, ''))) as visitor_count\n            FROM page_views \n            WHERE created_at BETWEEN $1 AND $2\n            GROUP BY referrer\n            ORDER BY visitor_count DESC\n            LIMIT 10\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "referrer",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "visitor_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "c112a45cf763e2f56d9872bfe9a84ac313ba6c6bee1e67649b790708b7ce0763"
+}

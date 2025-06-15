@@ -60,12 +60,20 @@ pub struct FeatureSettings {
 pub struct NotificationSettings {
     #[serde(rename = "emailNotifications")]
     pub email_notifications: bool,
-    #[serde(rename = "newCommentNotifications")]
-    pub new_comment_notifications: bool,
-    #[serde(rename = "newContactFormNotifications")]
-    pub new_contact_form_notifications: bool,
-    #[serde(rename = "systemAlertNotifications")]
-    pub system_alert_notifications: bool,
+    #[serde(rename = "smtpHost")]
+    pub smtp_host: Option<String>,
+    #[serde(rename = "smtpPort")]
+    pub smtp_port: Option<i32>,
+    #[serde(rename = "smtpUsername")]
+    pub smtp_username: Option<String>,
+    #[serde(rename = "smtpPassword")]
+    pub smtp_password: Option<String>,
+    #[serde(rename = "telegramNotifications")]
+    pub telegram_notifications: Option<bool>,
+    #[serde(rename = "telegramBotToken")]
+    pub telegram_bot_token: Option<String>,
+    #[serde(rename = "telegramChatId")]
+    pub telegram_chat_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -159,10 +167,14 @@ impl Default for FeatureSettings {
 impl Default for NotificationSettings {
     fn default() -> Self {
         Self {
-            email_notifications: true,
-            new_comment_notifications: true,
-            new_contact_form_notifications: true,
-            system_alert_notifications: true,
+            email_notifications: false,
+            smtp_host: None,
+            smtp_port: Some(587),
+            smtp_username: None,
+            smtp_password: None,
+            telegram_notifications: Some(false),
+            telegram_bot_token: None,
+            telegram_chat_id: None,
         }
     }
 }

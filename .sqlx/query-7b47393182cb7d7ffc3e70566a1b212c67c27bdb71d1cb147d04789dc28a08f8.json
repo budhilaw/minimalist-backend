@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                DATE(created_at) as date,\n                COUNT(*) as page_views,\n                COUNT(DISTINCT CONCAT(ip_address, COALESCE(user_agent, ''))) as unique_visitors\n            FROM page_views \n            WHERE created_at BETWEEN $1 AND $2\n            GROUP BY DATE(created_at)\n            ORDER BY date DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 1,
+        "name": "page_views",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "unique_visitors",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "7b47393182cb7d7ffc3e70566a1b212c67c27bdb71d1cb147d04789dc28a08f8"
+}

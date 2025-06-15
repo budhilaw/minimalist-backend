@@ -184,6 +184,22 @@ pub async fn cleanup_old_audit_logs(
     })))
 }
 
+// DELETE /api/v1/admin/audit-logs
+pub async fn delete_all_audit_logs(
+    State(state): State<AuditLogState>,
+) -> Result<Json<Value>, AppError> {
+    let deleted_count = state.audit_log_service.delete_all_logs().await?;
+
+    info!(
+        "delete_all_audit_logs: Deleted {} audit logs",
+        deleted_count
+    );
+    Ok(Json(json!({
+        "message": format!("Deleted {} audit logs", deleted_count),
+        "deleted_count": deleted_count
+    })))
+}
+
 // GET /api/v1/admin/audit-logs/stats
 pub async fn get_audit_log_stats(
     State(state): State<AuditLogState>,

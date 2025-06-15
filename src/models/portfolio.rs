@@ -8,6 +8,7 @@ use validator::Validate;
 pub struct PortfolioProject {
     pub id: Uuid,
     pub title: String,
+    pub slug: String,
     pub description: String,
     pub long_description: Option<String>,
     pub category: String,
@@ -29,6 +30,7 @@ pub struct PortfolioProject {
 pub struct PortfolioProjectResponse {
     pub id: Uuid,
     pub title: String,
+    pub slug: String,
     pub description: String,
     pub long_description: Option<String>,
     pub category: String,
@@ -51,6 +53,7 @@ impl From<PortfolioProject> for PortfolioProjectResponse {
         Self {
             id: project.id,
             title: project.title,
+            slug: project.slug,
             description: project.description,
             long_description: project.long_description,
             category: project.category,
@@ -78,6 +81,12 @@ pub struct CreatePortfolioProjectRequest {
         message = "Title is required and must be less than 255 characters"
     ))]
     pub title: String,
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Slug is required and must be less than 255 characters"
+    ))]
+    pub slug: String,
     #[validate(length(min = 1, message = "Description is required"))]
     pub description: String,
     pub long_description: Option<String>,
@@ -116,6 +125,12 @@ pub struct UpdatePortfolioProjectRequest {
         message = "Title is required and must be less than 255 characters"
     ))]
     pub title: String,
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Slug is required and must be less than 255 characters"
+    ))]
+    pub slug: String,
     #[validate(length(min = 1, message = "Description is required"))]
     pub description: String,
     pub long_description: Option<String>,

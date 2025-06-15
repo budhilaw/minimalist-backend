@@ -23,6 +23,7 @@ pub trait AuditLogServiceTrait: Send + Sync {
     async fn get_recent_logs(&self, limit: Option<i64>) -> Result<Vec<AuditLog>>;
     async fn get_failed_actions(&self, limit: Option<i64>) -> Result<Vec<AuditLog>>;
     async fn delete_old_logs(&self, days: i32) -> Result<u64>;
+    async fn delete_all_logs(&self) -> Result<u64>;
     async fn get_stats(&self) -> Result<serde_json::Value>;
 
     // Helper methods
@@ -203,6 +204,10 @@ impl AuditLogServiceTrait for AuditLogService {
             return Err(anyhow::anyhow!("Cannot delete logs newer than 30 days"));
         }
         self.repository.delete_old_logs(days).await
+    }
+
+    async fn delete_all_logs(&self) -> Result<u64> {
+        self.repository.delete_all_logs().await
     }
 
     async fn get_stats(&self) -> Result<serde_json::Value> {

@@ -130,11 +130,11 @@ impl PostRepositoryTrait for PostRepository {
         let created_post = sqlx::query_as::<_, Post>(
             r#"
             INSERT INTO posts (
-                title, slug, content, excerpt, category, tags, featured, 
+                title, slug, content, excerpt, category, tags, featured_image, featured, 
                 published, seo_title, seo_description, seo_keywords, published_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-            RETURNING id, title, slug, content, excerpt, category, tags, featured, 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING id, title, slug, content, excerpt, category, tags, featured_image, featured, 
                       published, seo_title, seo_description, seo_keywords, view_count, 
                       published_at, created_at, updated_at
             "#,
@@ -145,6 +145,7 @@ impl PostRepositoryTrait for PostRepository {
         .bind(&post.excerpt)
         .bind(&post.category)
         .bind(&post.tags)
+        .bind(&post.featured_image)
         .bind(post.featured.unwrap_or(false))
         .bind(post.published.unwrap_or(false))
         .bind(&post.seo_title)
@@ -186,16 +187,16 @@ impl PostRepositoryTrait for PostRepository {
             r#"
             UPDATE posts 
             SET title = $1, slug = $2, content = $3, excerpt = $4, category = $5, 
-                tags = $6, featured = $7, published = $8, seo_title = $9, 
-                seo_description = $10, seo_keywords = $11, 
+                tags = $6, featured_image = $7, featured = $8, published = $9, seo_title = $10, 
+                seo_description = $11, seo_keywords = $12, 
                 published_at = CASE 
-                    WHEN $8 = true AND published = false THEN NOW()
-                    WHEN $8 = false THEN NULL
+                    WHEN $9 = true AND published = false THEN NOW()
+                    WHEN $9 = false THEN NULL
                     ELSE published_at
                 END,
                 updated_at = NOW()
-            WHERE id = $12
-            RETURNING id, title, slug, content, excerpt, category, tags, featured, 
+            WHERE id = $13
+            RETURNING id, title, slug, content, excerpt, category, tags, featured_image, featured, 
                       published, seo_title, seo_description, seo_keywords, view_count, 
                       published_at, created_at, updated_at
             "#,
@@ -206,6 +207,7 @@ impl PostRepositoryTrait for PostRepository {
         .bind(&post.excerpt)
         .bind(&post.category)
         .bind(&post.tags)
+        .bind(&post.featured_image)
         .bind(post.featured.unwrap_or(false))
         .bind(new_published)
         .bind(&post.seo_title)

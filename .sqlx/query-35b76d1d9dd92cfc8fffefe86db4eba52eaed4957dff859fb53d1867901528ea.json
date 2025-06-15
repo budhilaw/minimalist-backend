@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                device_type,\n                COUNT(DISTINCT CONCAT(ip_address, COALESCE(user_agent, ''))) as visitor_count\n            FROM page_views \n            WHERE created_at BETWEEN $1 AND $2\n            GROUP BY device_type\n            ORDER BY visitor_count DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "device_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "visitor_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      true,
+      null
+    ]
+  },
+  "hash": "35b76d1d9dd92cfc8fffefe86db4eba52eaed4957dff859fb53d1867901528ea"
+}

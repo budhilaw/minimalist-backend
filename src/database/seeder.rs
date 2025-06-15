@@ -236,15 +236,60 @@ impl DatabaseSeeder {
         ];
         sqlx::query(
             r#"
-            INSERT INTO portfolio_projects (id, title, description, long_description, category, technologies, 
+            INSERT INTO portfolio_projects (id, title, slug, description, long_description, category, technologies, 
                                           live_url, github_url, image_url, featured, active, status, start_date, end_date, client, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
             "#
         )
         .bind(project1_id)
         .bind("E-commerce Platform")
+        .bind("ecommerce-platform")
         .bind("A full-stack e-commerce solution built with modern technologies")
-        .bind(Some("A comprehensive e-commerce platform featuring user authentication, product catalog, shopping cart, payment integration, and admin dashboard."))
+        .bind(Some(r#"# E-commerce Platform
+
+A comprehensive e-commerce solution built with modern technologies, featuring a complete shopping experience from browsing to checkout.
+
+## Key Features
+
+- **User Authentication**: Secure login/registration with JWT tokens
+- **Product Catalog**: Dynamic product listings with search and filtering
+- **Shopping Cart**: Real-time cart management with persistent storage
+- **Payment Integration**: Stripe payment processing with webhooks
+- **Admin Dashboard**: Complete order and inventory management
+
+## Technical Implementation
+
+### Frontend
+- Built with **React 18** and **TypeScript**
+- State management using **Redux Toolkit**
+- Responsive design with **Tailwind CSS**
+- Real-time updates via **WebSocket** connections
+
+### Backend
+- **Node.js** with **Express** framework
+- **PostgreSQL** database with **Prisma** ORM
+- **Redis** for session management and caching
+- **AWS S3** for image storage
+
+## Screenshots
+
+![Homepage](https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800)
+
+## Challenges & Solutions
+
+One of the main challenges was implementing real-time inventory updates across multiple user sessions. We solved this by:
+
+1. Using WebSocket connections for live updates
+2. Implementing optimistic UI updates
+3. Adding conflict resolution for concurrent purchases
+
+## Results
+
+- **50% increase** in conversion rate
+- **30% reduction** in cart abandonment
+- **99.9% uptime** since launch
+
+> "This platform transformed our online presence and significantly boosted our sales." - Client Testimonial"#))
         .bind("Web Application")
         .bind(&tech1)
         .bind(Some("https://ecommerce-demo.example.com"))
@@ -272,15 +317,130 @@ impl DatabaseSeeder {
         ];
         sqlx::query(
             r#"
-            INSERT INTO portfolio_projects (id, title, description, long_description, category, technologies, 
+            INSERT INTO portfolio_projects (id, title, slug, description, long_description, category, technologies, 
                                           live_url, github_url, image_url, featured, active, status, start_date, end_date, client, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
             "#
         )
         .bind(project2_id)
         .bind("Task Management API")
+        .bind("task-management-api")
         .bind("RESTful API for team task management and collaboration")
-        .bind(Some("A robust REST API for task management with JWT authentication, real-time notifications, and advanced filtering."))
+        .bind(Some(r#"# Task Management API
+
+A high-performance REST API built with Rust and Axum, designed for team collaboration and task management with enterprise-grade features.
+
+## Architecture Overview
+
+This API follows a clean architecture pattern with clear separation of concerns:
+
+```
+┌─────────────────┐
+│   Handlers      │ ← HTTP Layer
+├─────────────────┤
+│   Services      │ ← Business Logic
+├─────────────────┤
+│  Repositories   │ ← Data Access
+├─────────────────┤
+│   Database      │ ← PostgreSQL
+└─────────────────┘
+```
+
+## Key Features
+
+### Authentication & Authorization
+- **JWT-based authentication** with refresh tokens
+- **Role-based access control** (Admin, Manager, User)
+- **API key authentication** for service-to-service communication
+
+### Task Management
+- Create, update, delete, and assign tasks
+- **Priority levels** and **due date tracking**
+- **File attachments** with cloud storage integration
+- **Task dependencies** and **subtask support**
+
+### Real-time Features
+- **WebSocket notifications** for task updates
+- **Live collaboration** on task comments
+- **Real-time dashboard** updates
+
+### Advanced Filtering & Search
+- **Full-text search** with PostgreSQL
+- **Complex filtering** by multiple criteria
+- **Sorting and pagination** for large datasets
+
+## Technical Stack
+
+- **Language**: Rust 🦀
+- **Framework**: Axum (async web framework)
+- **Database**: PostgreSQL with SQLx
+- **Caching**: Redis for session management
+- **Authentication**: JWT with RS256 signing
+- **Documentation**: OpenAPI/Swagger integration
+
+## Performance Metrics
+
+- **Response time**: < 50ms average
+- **Throughput**: 10,000+ requests/second
+- **Memory usage**: < 50MB under load
+- **CPU efficiency**: 99% utilization
+
+## API Endpoints
+
+### Tasks
+```http
+GET    /api/v1/tasks              # List tasks with filtering
+POST   /api/v1/tasks              # Create new task
+GET    /api/v1/tasks/{id}         # Get task details
+PUT    /api/v1/tasks/{id}         # Update task
+DELETE /api/v1/tasks/{id}         # Delete task
+```
+
+### Teams
+```http
+GET    /api/v1/teams              # List teams
+POST   /api/v1/teams              # Create team
+GET    /api/v1/teams/{id}/members # Get team members
+```
+
+## Code Example
+
+```rust
+#[derive(Serialize, Deserialize)]
+pub struct CreateTaskRequest {
+    pub title: String,
+    pub description: Option<String>,
+    pub priority: TaskPriority,
+    pub due_date: Option<DateTime<Utc>>,
+    pub assignee_id: Option<Uuid>,
+}
+
+pub async fn create_task(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateTaskRequest>,
+) -> Result<Json<TaskResponse>, AppError> {
+    let task = state.task_service
+        .create_task(payload)
+        .await?;
+    
+    Ok(Json(task.into()))
+}
+```
+
+## Testing
+
+- **Unit tests**: 95% code coverage
+- **Integration tests**: All endpoints tested
+- **Load testing**: Handles 10k concurrent users
+- **Security testing**: OWASP compliance
+
+## Deployment
+
+Deployed using Docker containers with:
+- **Kubernetes** orchestration
+- **Horizontal pod autoscaling**
+- **Health checks** and **monitoring**
+- **CI/CD pipeline** with GitHub Actions"#))
         .bind("Backend API")
         .bind(&tech2)
         .bind(Option::<String>::None)

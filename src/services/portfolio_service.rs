@@ -18,6 +18,7 @@ pub trait PortfolioServiceTrait: Send + Sync {
         query: PortfolioProjectQuery,
     ) -> Result<PortfolioProjectsResponse>;
     async fn get_project_by_id(&self, id: Uuid) -> Result<Option<PortfolioProject>>;
+    async fn get_project_by_slug(&self, slug: &str) -> Result<Option<PortfolioProject>>;
     async fn create_project(
         &self,
         request: CreatePortfolioProjectRequest,
@@ -62,6 +63,10 @@ impl PortfolioServiceTrait for PortfolioService {
 
     async fn get_project_by_id(&self, id: Uuid) -> Result<Option<PortfolioProject>> {
         self.repository.find_by_id(id).await
+    }
+
+    async fn get_project_by_slug(&self, slug: &str) -> Result<Option<PortfolioProject>> {
+        self.repository.find_by_slug(slug).await
     }
 
     async fn create_project(

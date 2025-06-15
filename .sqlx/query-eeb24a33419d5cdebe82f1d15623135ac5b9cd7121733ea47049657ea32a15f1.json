@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                country,\n                city,\n                COUNT(DISTINCT CONCAT(ip_address, COALESCE(user_agent, ''))) as visitor_count\n            FROM page_views \n            WHERE created_at BETWEEN $1 AND $2\n            GROUP BY country, city\n            ORDER BY visitor_count DESC\n            LIMIT $3\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "visitor_count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "eeb24a33419d5cdebe82f1d15623135ac5b9cd7121733ea47049657ea32a15f1"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT COUNT(*) FROM (\n                SELECT session_id \n                FROM page_views \n                WHERE session_id IS NOT NULL\n                GROUP BY session_id \n                HAVING COUNT(*) = 1\n            ) as single_sessions\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "41cdf5f685806856ac30bb25643dfb0e7ee41237c1ef0c8ef6c54d7aecdd7da2"
+}

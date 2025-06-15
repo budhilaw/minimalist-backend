@@ -1,6 +1,7 @@
 CREATE TABLE portfolio_projects (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
     description TEXT NOT NULL,
     long_description TEXT,
     category VARCHAR(50) NOT NULL,
@@ -19,6 +20,7 @@ CREATE TABLE portfolio_projects (
 );
 
 -- Indexes
+CREATE INDEX idx_portfolio_slug ON portfolio_projects(slug);
 CREATE INDEX idx_portfolio_category ON portfolio_projects(category);
 CREATE INDEX idx_portfolio_status ON portfolio_projects(status);
 CREATE INDEX idx_portfolio_featured ON portfolio_projects(featured);

@@ -1,0 +1,113 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO page_views (\n                id, page_path, page_title, referrer, user_agent, ip_address,\n                country, city, device_type, browser, os, session_id, user_id, created_at\n            )\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)\n            RETURNING *\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "page_path",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "page_title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "referrer",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "user_agent",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "ip_address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "city",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "device_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "browser",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "os",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "session_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "a58e5fa5a06d64d9366ebb88d0db315104a5d5554d2c4e826e4fb2b7e7739578"
+}

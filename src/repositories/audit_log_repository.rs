@@ -269,4 +269,12 @@ impl AuditLogRepository {
 
         Ok(result.rows_affected())
     }
+
+    pub async fn delete_all_logs(&self) -> Result<u64> {
+        let result = sqlx::query!("DELETE FROM audit_logs")
+            .execute(&self.pool)
+            .await?;
+
+        Ok(result.rows_affected())
+    }
 }
