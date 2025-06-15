@@ -336,7 +336,9 @@ fn create_app(
     let audit_log_routes = Router::new()
         .route(
             "/",
-            get(audit_log::get_audit_logs).post(audit_log::create_audit_log).delete(audit_log::delete_all_audit_logs),
+            get(audit_log::get_audit_logs)
+                .post(audit_log::create_audit_log)
+                .delete(audit_log::delete_all_audit_logs),
         )
         .route("/:id", get(audit_log::get_audit_log))
         .route("/recent", get(audit_log::get_recent_audit_logs))

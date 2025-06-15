@@ -115,7 +115,8 @@ impl PortfolioRepositoryTrait for PortfolioRepository {
                 FROM portfolio_projects 
                 ORDER BY featured DESC, created_at DESC 
                 LIMIT $1 OFFSET $2
-            "#.to_string();
+            "#
+            .to_string();
             (None, count_query, projects_query)
         };
 
