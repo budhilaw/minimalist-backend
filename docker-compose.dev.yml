@@ -47,6 +47,7 @@ services:
       - DATABASE_URL=postgresql://kai:1550@postgres:5432/personal-website
       - RUST_LOG=debug
     volumes:
+      - ./.config.yaml:/app/.config.yaml:ro
       - ./.secret.yaml:/app/.secret.yaml:ro
     networks:
       - portfolio-dev-network

@@ -50,6 +50,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-kai}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-personal-website}
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
     volumes:
+      - ./.config.yaml:/app/.config.yaml:ro
       - ./.secret.yaml:/app/.secret.yaml:ro
     expose:
       - "8000"
